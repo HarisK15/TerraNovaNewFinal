@@ -10,30 +10,29 @@ import os
 from flask import Blueprint, request, jsonify
 from app.services.ollama_service import generate_sql_query, generate_pandas_query, explain_query_results, detect_export_intent, QUERY_TYPE_PANDAS
 from app.utils.db_handler import get_database_schema, format_schema_for_prompt, execute_query, execute_pandas_query, format_results
-from app.utils.shared_state import shared_state
 
 query_routes = Blueprint("query_routes", __name__, url_prefix="/")
 
-# Initialize with shared state
-print(f"Query routes initializing. Current shared state: {shared_state.__dict__}")
+# Store the currently active file path globally
+current_file_path = None
 
 @query_routes.route("/active-file", methods=["GET"])
 def get_active_file():
     """Return the currently active file and its schema"""
-    file_path = shared_state.active_file
+    global current_file_path
     
-    if not file_path or not os.path.exists(file_path):
+    if not current_file_path or not os.path.exists(current_file_path):
         return jsonify({
             "success": False,
             "error": "No active file found"
         }), 404
     
     # Extract schema information
-    schema = get_database_schema(file_path)
+    schema = get_database_schema(current_file_path)
     
     return jsonify({
         "success": True,
-        "file": os.path.basename(file_path),
+        "file": os.path.basename(current_file_path),
         "schema": schema
     }), 200
 
@@ -60,9 +59,8 @@ def set_active_file():
     if not os.path.exists(absolute_path):
         return jsonify({"error": f"File not found: {absolute_path}"}), 404
     
-    # Update shared state
-    shared_state.active_file = absolute_path
-    print(f"Active file set to: {shared_state.active_file}")
+    global current_file_path
+    current_file_path = absolute_path
     
     # Extract and return schema information
     schema = get_database_schema(absolute_path)
@@ -78,7 +76,7 @@ def process_query():
     """Process a natural language query using Ollama and execute it against the active file"""
     data = request.json
     user_query = data.get("query")
-    file_path = data.get("filePath", shared_state.active_file)
+    file_path = data.get("filePath", current_file_path)
     
     if not user_query:
         return jsonify({"error": "No query provided"}), 400
@@ -86,23 +84,13 @@ def process_query():
     if not file_path:
         return jsonify({"error": "No active file. Please upload a file first."}), 400
         
-    # Make sure file_path is a string
-    if isinstance(file_path, dict):
-        # If file_path is a dictionary, extract the path value
-        print(f"Warning: file_path is a dictionary: {file_path}")
-        if "path" in file_path:
-            file_path = file_path["path"]
-        else:
-            return jsonify({"error": "Invalid file path format"}), 400
-            
     # Fix the path to ensure we don't have duplicate 'backend' directory issues
     # Get absolute path without backend prefix duplication
-    if isinstance(file_path, str) and file_path.startswith('backend/'):
+    if file_path.startswith('backend/'):
         file_path = file_path[8:]  # Remove 'backend/' prefix
         
     # Ensure the path is relative to the current directory
-    if isinstance(file_path, str):
-        file_path = os.path.join(os.getcwd(), file_path)
+    file_path = os.path.join(os.getcwd(), file_path)
     print(f"✅ DEBUG: Adjusted file path: {file_path}")
         
     # Get schema information from the file

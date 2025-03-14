@@ -2,6 +2,8 @@ import sqlite3
 import os
 import pandas as pd
 import json
+import re
+import numpy as np
 
 def get_database_schema(file_path):
     """Extract table and column names from an SQLite database or CSV file."""
@@ -93,176 +95,150 @@ def format_schema_for_prompt(schema):
     return "\n".join(formatted_schema)
 
 def execute_pandas_query(file_path, pandas_code):
-    """Execute a Pandas query on a CSV file."""
-    try:
-        # Import necessary modules for Pandas operations
-        import pandas as pd
-        import numpy as np
+    """
+    Execute a pandas query on a CSV file.
+    
+    Args:
+        file_path (str): Path to the CSV file
+        pandas_code (str): Pandas query code to execute
         
+    Returns:
+        dict: Contains the query execution results or error information
+    """
+    try:
+        # Resolve to an absolute path if needed
         abs_file_path = os.path.abspath(file_path)
+        
+        if not os.path.exists(abs_file_path):
+            return {"success": False, "error": f"File not found: {file_path}"}
+        
+        # Determine the file format
         file_extension = os.path.splitext(abs_file_path)[1].lower()
         
-        # Only CSV files are supported for Pandas queries
         if file_extension != '.csv':
-            return {
-                "success": False,
-                "error": f"Pandas queries are only supported for CSV files, not {file_extension} files"
-            }
-        
-        # Read the CSV into a DataFrame
+            return {"success": False, "error": "This operation is only supported for CSV files"}
+            
+        # Read the CSV file
+        print(f"Successfully read CSV file: {abs_file_path}")
         df = pd.read_csv(abs_file_path)
+        print(f"DataFrame shape: {df.shape}")
+        print(f"DataFrame columns: {df.columns.tolist()}")
         
-        # Print the first few rows and column names for debugging
-        print(f"✅ DEBUG: CSV DataFrame columns: {df.columns.tolist()}")
-        print(f"✅ DEBUG: CSV DataFrame sample data:\n{df.head(3)}")
-        
-        # Print the pandas code being executed
-        print(f"✅ DEBUG: Executing Pandas Query on CSV data:\n{pandas_code}")
-        
-        # Execute the pandas code 
-        try:
-            # Create a dictionary with safe globals
-            safe_globals = {
-                'pd': pd,
-                'np': np,
-                'DataFrame': pd.DataFrame,
-                'Series': pd.Series,
-                'len': len,
-                'str': str,
-                'int': int,
-                'float': float,
-                'list': list,
-                'dict': dict,
-                'min': min,
-                'max': max,
-                'sum': sum,
-                'sorted': sorted,
-                'round': round
-            }
+        # Special case for simple column selection like df[['col1', 'col2']]
+        column_selection_pattern = r"df\[\[(.+)\]\]"
+        match = re.search(column_selection_pattern, pandas_code)
+        if match:
+            columns_str = match.group(1)
+            print(f"Detected simple column selection: {columns_str}")
             
-            # Create locals dictionary with the DataFrame
-            locals_dict = {'df': df, 'result': None}
-            
-            # Pre-process the pandas code to fix common issues with column naming
-            # This fixes common patterns like value_counts() with rename() that often lead to duplicate column names
-            fixed_code = pandas_code
-            
-            # Log the exact pandas code being executed
-            print(f"✅ DEBUG: Executing pandas code: {fixed_code}")
-            
-            # Execute the pandas code in a safer but more functional environment
-            exec(f"result = {fixed_code}", safe_globals, locals_dict)
-            
-            # Get the result from the locals dictionary
-            result = locals_dict.get('result')
-            
-            # Print the columns in the result for debugging
-            if isinstance(result, pd.DataFrame):
-                print(f"✅ DEBUG: Result columns from query: {result.columns.tolist()}")
-            
-            # For export queries with df[...] pattern, ensure only selected columns are included
-            # This handles cases where our intent detection found specific columns but they weren't properly filtered
-            if isinstance(result, pd.DataFrame) and pandas_code.startswith('df[[') and 'if col in df.columns' in pandas_code:
-                # This looks like an export query, so we should extract the column list and filter explicitly
-                try:
-                    # Extract column names from the query
-                    import re
-                    col_match = re.search(r'df\[\[(.*?)\]\]', pandas_code)
-                    if col_match:
-                        col_expr = col_match.group(1)
-                        # Extract just the column names
-                        cols = re.findall(r"'([^']*)'", col_expr)
-                        if cols:
-                            print(f"✅ DEBUG: Filtering to these columns: {cols}")
-                            # Only keep columns that exist in the dataframe
-                            valid_cols = [col for col in cols if col in result.columns]
-                            if valid_cols:
-                                result = result[valid_cols]
-                                print(f"✅ DEBUG: Filtered result to columns: {result.columns.tolist()}")
-                except Exception as e:
-                    print(f"⚠️ DEBUG: Error in column filtering: {str(e)}")
-            
-            # For value_counts results, let's manually fix the column naming
-            # This is a targeted fix for the common pattern we're seeing issues with
-            if isinstance(result, pd.DataFrame) and len(result.columns) == 2 and result.columns.duplicated().any():
-                # This looks like a value_counts() result with duplicate column names
-                # Directly set proper column names
-                col_base = result.columns[0]
-                result.columns = ["value", "count"]
-            
-            # If result is a DataFrame, convert it to a dictionary for JSON serialization
-            if isinstance(result, pd.DataFrame):
-                print(f"✅ DEBUG: Query results shape: {result.shape}")
-                if not result.empty:
-                    print(f"✅ DEBUG: First few results:\n{result.head(3)}")
-                    
-                    # Check for duplicate column names and fix them
-                    if any(result.columns.duplicated()):
-                        print("✅ DEBUG: Found duplicate column names. Renaming columns to make them unique.")
-                        # Create a mapping for renaming columns with numerical suffixes
-                        # This preserves the original column names while making them unique
-                        new_columns = []
-                        seen = {}
-                        for col in result.columns:
-                            if col in seen:
-                                seen[col] += 1
-                                new_columns.append(f"{col}_{seen[col]}")
-                            else:
-                                seen[col] = 0
-                                new_columns.append(col)
-                        
-                        # Rename the columns
-                        result.columns = new_columns
-                        print(f"✅ DEBUG: Renamed columns to: {result.columns.tolist()}")
+            # Extract column names from the string
+            try:
+                # Split by comma and remove quotes and whitespace
+                requested_columns = []
+                for col_str in columns_str.split(','):
+                    # Remove quotes and spaces
+                    clean_col = col_str.strip().strip("'").strip('"')
+                    requested_columns.append(clean_col)
+                
+                print(f"Requested columns: {requested_columns}")
+                # Filter to only include columns that exist in the DataFrame
+                valid_columns = [col for col in requested_columns if col in df.columns]
+                print(f"Valid columns found in DataFrame: {valid_columns}")
+                
+                if valid_columns:
+                    result_df = df[valid_columns]
+                    print(f"Successfully selected columns: {valid_columns}")
+                    return {
+                        "success": True,
+                        "results": result_df.to_dict(orient='records'),
+                        "columns": valid_columns
+                    }
                 else:
-                    print("✅ DEBUG: Query returned no results")
-                    
-                # Convert NumPy types to native Python types for JSON serialization
-                def convert_numpy_types(obj):
-                    import numpy as np
-                    if isinstance(obj, np.integer):
-                        return int(obj)
-                    elif isinstance(obj, np.floating):
-                        return float(obj)
-                    elif isinstance(obj, np.ndarray):
-                        return obj.tolist()
-                    elif isinstance(obj, pd.Series):
-                        return convert_numpy_types(obj.values)
-                    elif isinstance(obj, pd.DataFrame):
-                        return {col: convert_numpy_types(result[col]) for col in result.columns}
-                    elif isinstance(obj, dict):
-                        return {k: convert_numpy_types(v) for k, v in obj.items()}
-                    elif isinstance(obj, list):
-                        return [convert_numpy_types(item) for item in obj]
-                    else:
-                        return obj
-                
-                # Create JSON-compatible results
-                results_dict = result.to_dict(orient="records")
-                results_dict = convert_numpy_types(results_dict)
-                
-                return {
-                    "success": True,
-                    "results": results_dict,
-                    "columns": result.columns.tolist()
-                }
-            else:
-                # Handle scalar or other non-DataFrame results
-                print(f"✅ DEBUG: Query returned a non-DataFrame result: {result}")
-                return {
-                    "success": True,
-                    "results": [{"Result": result}],
-                    "columns": ["Result"]
-                }
-                
-        except Exception as e:
-            print(f"⚠️ ERROR executing Pandas query: {str(e)}")
+                    print("No valid columns found in DataFrame")
+                    return {
+                        "success": False,
+                        "error": f"None of the requested columns {requested_columns} were found in the DataFrame. Available columns are: {df.columns.tolist()}"
+                    }
+            except Exception as column_error:
+                print(f"Error processing column selection: {str(column_error)}")
+                # Fall through to standard execution
+        
+        # Execute the pandas code directly
+        print(f"Running pandas code: {pandas_code[:100]}...")
+        
+        # Create locals dictionary with the DataFrame
+        locals_dict = {'df': df, 'result': None}
+        
+        try:
+            # Execute the pandas code with no timeout limitation
+            exec(f"result = {pandas_code}", {'pd': pd, 'np': np, '__builtins__': {}}, locals_dict)
+            
+        except Exception as exec_error:
+            print(f"Error executing pandas code: {str(exec_error)}")
             return {
                 "success": False,
-                "error": f"Error executing Pandas query: {str(e)}"
+                "error": f"Error executing pandas code: {str(exec_error)}"
+            }
+        
+        # Handle value_counts results with duplicate column names
+        if isinstance(locals_dict['result'], pd.DataFrame) and len(locals_dict['result'].columns) == 2 and locals_dict['result'].columns.duplicated().any():
+            print("Fixing duplicate column names in value_counts() result")
+            locals_dict['result'].columns = ["value", "count"]
+        
+        # If result is a DataFrame, convert it to a dictionary for JSON
+        if isinstance(locals_dict['result'], pd.DataFrame):
+            print(f"Query results shape: {locals_dict['result'].shape}")
+            if not locals_dict['result'].empty:
+                print(f"First few results:")
+                print(locals_dict['result'].head(3))
+                
+                # Check for duplicate column names and fix them
+                if any(locals_dict['result'].columns.duplicated()):
+                    print("Found duplicate column names, renaming them")
+                    # Rename duplicate columns by adding a number suffix
+                    cols = list(locals_dict['result'].columns)
+                    for i, col in enumerate(cols):
+                        count = cols[:i].count(col)
+                        if count > 0:
+                            cols[i] = f"{col}_{count}"
+                    locals_dict['result'].columns = cols
+            
+            # Convert DataFrame to dict for JSON serialization
+            results_dict = locals_dict['result'].to_dict(orient='records')
+            
+            return {
+                "success": True,
+                "results": results_dict,
+                "columns": locals_dict['result'].columns.tolist()
+            }
+        elif isinstance(locals_dict['result'], pd.Series):
+            print(f"Result is a Series with shape: {locals_dict['result'].shape}")
+            # Convert Series to DataFrame first
+            result_df = locals_dict['result'].reset_index()
+            
+            # If index has no name, give it a default
+            if result_df.columns[0] == 'index':
+                result_df.columns = ['key', 'value']
+            
+            results_dict = result_df.to_dict(orient='records')
+            
+            return {
+                "success": True,
+                "results": results_dict,
+                "columns": result_df.columns.tolist()
+            }
+        else:
+            # Handle scalar or other types
+            print(f"Result is not a DataFrame or Series: {type(locals_dict['result'])}")
+            # Convert to a single-item list for consistency
+            return {
+                "success": True,
+                "results": [{"result": locals_dict['result']}],
+                "columns": ["result"]
             }
             
     except Exception as e:
+        print(f"Error in execute_pandas_query: {str(e)}")
         return {
             "success": False,
             "error": str(e)
