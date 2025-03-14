@@ -1,0 +1,64 @@
+# shared_state.py
+# This module provides shared state variables that can be imported by multiple route files
+import os
+import json
+import threading
+
+class SharedState:
+    """A robust class to hold shared state across different modules with persistence"""
+    _instance = None
+    _lock = threading.Lock()
+    _state_file = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'state.json')
+    
+    def __new__(cls):
+        with cls._lock:
+            if cls._instance is None:
+                cls._instance = super(SharedState, cls).__new__(cls)
+                cls._instance._initialized = False
+            return cls._instance
+    
+    def __init__(self):
+        if self._initialized:
+            return
+            
+        self._active_file = None
+        self._load_state()
+        self._initialized = True
+    
+    @property
+    def active_file(self):
+        return self._active_file
+    
+    @active_file.setter
+    def active_file(self, value):
+        self._active_file = value
+        self._save_state()
+        print(f"Active file updated and saved: {value['name'] if value else None}")
+    
+    def _load_state(self):
+        """Load state from file if it exists"""
+        try:
+            if os.path.exists(self._state_file):
+                with open(self._state_file, 'r') as f:
+                    state = json.load(f)
+                    self._active_file = state.get('active_file')
+                    print(f"Loaded state from {self._state_file}: active_file={self._active_file['name'] if self._active_file else None}")
+        except Exception as e:
+            print(f"Error loading state: {str(e)}")
+    
+    def _save_state(self):
+        """Save state to file"""
+        try:
+            state = {
+                'active_file': self._active_file
+            }
+            with open(self._state_file, 'w') as f:
+                json.dump(state, f)
+        except Exception as e:
+            print(f"Error saving state: {str(e)}")
+    
+    def __dict__(self):
+        return {'active_file': self._active_file}
+
+# Create a singleton instance
+shared_state = SharedState()

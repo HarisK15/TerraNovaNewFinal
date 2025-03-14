@@ -123,3 +123,948 @@ if __name__ == "__main__":
     # df = pd.read_csv("terranova.csv")  # Load CSV
     # pandas_results = process_query(test_pandas_query, llm_models, db_path=None, df=df)
     # print("\n🔹 Pandas Query Results:\n", pandas_results)
+        return pd.DataFrame({"Error": [f"Error executing Pandas query: {error_message}"]})
+
+
+
+def process_query(user_query, llm_model, db_path=None, df=None):
+    try:
+        if db_path:
+            sql_query = generate_sql_query(user_query, llm_model)
+            return execute_sql_query(sql_query, db_path)
+        elif df is not None:
+            Pandas_query = generate_pandas_query(user_query, llm_model)
+            return execute_pandas_query(Pandas_query, df)
+        else:
+            return "Error: No query provided"
+
+    except Exception as e:
+        return f"Processing Error: {str(e)}"
+
+
+
+if __name__ == "__main__":
+    from langchain_service import initialize_langchain_service
+
+    llm_models = initialize_langchain_service()
+
+    # Test SQL Query Execution
+    test_sql_query = "Show all employees in New York City earning more than 50,000 USD"
+    sql_results = process_query(test_sql_query, llm_models, db_path="../../uploads/test.db", df=None)
+    print("\n🔹 SQL Query Results:\n", sql_results)
+
+    # Test Pandas Query Execution
+    # test_pandas_query = "Show all customer_ids for customers in GO"
+    # df = pd.read_csv("terranova.csv")  # Load CSV
+    # pandas_results = process_query(test_pandas_query, llm_models, db_path=None, df=df)
+    # print("\n🔹 Pandas Query Results:\n", pandas_results)
+        return pd.DataFrame({"Error": [f"Error executing Pandas query: {error_message}"]})
+
+
+
+def process_query(user_query, llm_model, db_path=None, df=None):
+    try:
+        if db_path:
+            sql_query = generate_sql_query(user_query, llm_model)
+            return execute_sql_query(sql_query, db_path)
+        elif df is not None:
+            Pandas_query = generate_pandas_query(user_query, llm_model)
+            return execute_pandas_query(Pandas_query, df)
+        else:
+            return "Error: No query provided"
+
+    except Exception as e:
+        return f"Processing Error: {str(e)}"
+
+
+
+if __name__ == "__main__":
+    from langchain_service import initialize_langchain_service
+
+    llm_models = initialize_langchain_service()
+
+    # Test SQL Query Execution
+    test_sql_query = "Show all employees in New York City earning more than 50,000 USD"
+    sql_results = process_query(test_sql_query, llm_models, db_path="../../uploads/test.db", df=None)
+    print("\n🔹 SQL Query Results:\n", sql_results)
+
+    # Test Pandas Query Execution
+    # test_pandas_query = "Show all customer_ids for customers in GO"
+    # df = pd.read_csv("terranova.csv")  # Load CSV
+    # pandas_results = process_query(test_pandas_query, llm_models, db_path=None, df=df)
+    # print("\n🔹 Pandas Query Results:\n", pandas_results)
+        return pd.DataFrame({"Error": [f"Error executing Pandas query: {error_message}"]})
+
+
+
+def process_query(user_query, llm_model, db_path=None, df=None):
+    try:
+        if db_path:
+            sql_query = generate_sql_query(user_query, llm_model)
+            return execute_sql_query(sql_query, db_path)
+        elif df is not None:
+            Pandas_query = generate_pandas_query(user_query, llm_model)
+            return execute_pandas_query(Pandas_query, df)
+        else:
+            return "Error: No query provided"
+
+    except Exception as e:
+        return f"Processing Error: {str(e)}"
+
+
+
+if __name__ == "__main__":
+    from langchain_service import initialize_langchain_service
+
+    llm_models = initialize_langchain_service()
+
+    # Test SQL Query Execution
+    test_sql_query = "Show all employees in New York City earning more than 50,000 USD"
+    sql_results = process_query(test_sql_query, llm_models, db_path="../../uploads/test.db", df=None)
+    print("\n🔹 SQL Query Results:\n", sql_results)
+
+    # Test Pandas Query Execution
+    # test_pandas_query = "Show all customer_ids for customers in GO"
+    # df = pd.read_csv("terranova.csv")  # Load CSV
+    # pandas_results = process_query(test_pandas_query, llm_models, db_path=None, df=df)
+    # print("\n🔹 Pandas Query Results:\n", pandas_results)
+        return pd.DataFrame({"Error": [f"Error executing Pandas query: {error_message}"]})
+
+
+
+def process_query(user_query, llm_model, db_path=None, df=None):
+    try:
+        if db_path:
+            sql_query = generate_sql_query(user_query, llm_model)
+            return execute_sql_query(sql_query, db_path)
+        elif df is not None:
+            Pandas_query = generate_pandas_query(user_query, llm_model)
+            return execute_pandas_query(Pandas_query, df)
+        else:
+            return "Error: No query provided"
+
+    except Exception as e:
+        return f"Processing Error: {str(e)}"
+
+
+
+if __name__ == "__main__":
+    from langchain_service import initialize_langchain_service
+
+    llm_models = initialize_langchain_service()
+
+    # Test SQL Query Execution
+    test_sql_query = "Show all employees in New York City earning more than 50,000 USD"
+    sql_results = process_query(test_sql_query, llm_models, db_path="../../uploads/test.db", df=None)
+    print("\n🔹 SQL Query Results:\n", sql_results)
+
+    # Test Pandas Query Execution
+    # test_pandas_query = "Show all customer_ids for customers in GO"
+    # df = pd.read_csv("terranova.csv")  # Load CSV
+    # pandas_results = process_query(test_pandas_query, llm_models, db_path=None, df=df)
+    # print("\n🔹 Pandas Query Results:\n", pandas_results)
+        return pd.DataFrame({"Error": [f"Error executing Pandas query: {error_message}"]})
+
+
+
+def process_query(user_query, llm_model, db_path=None, df=None):
+    try:
+        if db_path:
+            sql_query = generate_sql_query(user_query, llm_model)
+            return execute_sql_query(sql_query, db_path)
+        elif df is not None:
+            Pandas_query = generate_pandas_query(user_query, llm_model)
+            return execute_pandas_query(Pandas_query, df)
+        else:
+            return "Error: No query provided"
+
+    except Exception as e:
+        return f"Processing Error: {str(e)}"
+
+
+
+if __name__ == "__main__":
+    from langchain_service import initialize_langchain_service
+
+    llm_models = initialize_langchain_service()
+
+    # Test SQL Query Execution
+    test_sql_query = "Show all employees in New York City earning more than 50,000 USD"
+    sql_results = process_query(test_sql_query, llm_models, db_path="../../uploads/test.db", df=None)
+    print("\n🔹 SQL Query Results:\n", sql_results)
+
+    # Test Pandas Query Execution
+    # test_pandas_query = "Show all customer_ids for customers in GO"
+    # df = pd.read_csv("terranova.csv")  # Load CSV
+    # pandas_results = process_query(test_pandas_query, llm_models, db_path=None, df=df)
+    # print("\n🔹 Pandas Query Results:\n", pandas_results)
+        return pd.DataFrame({"Error": [f"Error executing Pandas query: {error_message}"]})
+
+
+
+def process_query(user_query, llm_model, db_path=None, df=None):
+    try:
+        if db_path:
+            sql_query = generate_sql_query(user_query, llm_model)
+            return execute_sql_query(sql_query, db_path)
+        elif df is not None:
+            Pandas_query = generate_pandas_query(user_query, llm_model)
+            return execute_pandas_query(Pandas_query, df)
+        else:
+            return "Error: No query provided"
+
+    except Exception as e:
+        return f"Processing Error: {str(e)}"
+
+
+
+if __name__ == "__main__":
+    from langchain_service import initialize_langchain_service
+
+    llm_models = initialize_langchain_service()
+
+    # Test SQL Query Execution
+    test_sql_query = "Show all employees in New York City earning more than 50,000 USD"
+    sql_results = process_query(test_sql_query, llm_models, db_path="../../uploads/test.db", df=None)
+    print("\n🔹 SQL Query Results:\n", sql_results)
+
+    # Test Pandas Query Execution
+    # test_pandas_query = "Show all customer_ids for customers in GO"
+    # df = pd.read_csv("terranova.csv")  # Load CSV
+    # pandas_results = process_query(test_pandas_query, llm_models, db_path=None, df=df)
+    # print("\n🔹 Pandas Query Results:\n", pandas_results)
+        return pd.DataFrame({"Error": [f"Error executing Pandas query: {error_message}"]})
+
+
+
+def process_query(user_query, llm_model, db_path=None, df=None):
+    try:
+        if db_path:
+            sql_query = generate_sql_query(user_query, llm_model)
+            return execute_sql_query(sql_query, db_path)
+        elif df is not None:
+            Pandas_query = generate_pandas_query(user_query, llm_model)
+            return execute_pandas_query(Pandas_query, df)
+        else:
+            return "Error: No query provided"
+
+    except Exception as e:
+        return f"Processing Error: {str(e)}"
+
+
+
+if __name__ == "__main__":
+    from langchain_service import initialize_langchain_service
+
+    llm_models = initialize_langchain_service()
+
+    # Test SQL Query Execution
+    test_sql_query = "Show all employees in New York City earning more than 50,000 USD"
+    sql_results = process_query(test_sql_query, llm_models, db_path="../../uploads/test.db", df=None)
+    print("\n🔹 SQL Query Results:\n", sql_results)
+
+    # Test Pandas Query Execution
+    # test_pandas_query = "Show all customer_ids for customers in GO"
+    # df = pd.read_csv("terranova.csv")  # Load CSV
+    # pandas_results = process_query(test_pandas_query, llm_models, db_path=None, df=df)
+    # print("\n🔹 Pandas Query Results:\n", pandas_results)
+        return pd.DataFrame({"Error": [f"Error executing Pandas query: {error_message}"]})
+
+
+
+def process_query(user_query, llm_model, db_path=None, df=None):
+    try:
+        if db_path:
+            sql_query = generate_sql_query(user_query, llm_model)
+            return execute_sql_query(sql_query, db_path)
+        elif df is not None:
+            Pandas_query = generate_pandas_query(user_query, llm_model)
+            return execute_pandas_query(Pandas_query, df)
+        else:
+            return "Error: No query provided"
+
+    except Exception as e:
+        return f"Processing Error: {str(e)}"
+
+
+
+if __name__ == "__main__":
+    from langchain_service import initialize_langchain_service
+
+    llm_models = initialize_langchain_service()
+
+    # Test SQL Query Execution
+    test_sql_query = "Show all employees in New York City earning more than 50,000 USD"
+    sql_results = process_query(test_sql_query, llm_models, db_path="../../uploads/test.db", df=None)
+    print("\n🔹 SQL Query Results:\n", sql_results)
+
+    # Test Pandas Query Execution
+    # test_pandas_query = "Show all customer_ids for customers in GO"
+    # df = pd.read_csv("terranova.csv")  # Load CSV
+    # pandas_results = process_query(test_pandas_query, llm_models, db_path=None, df=df)
+    # print("\n🔹 Pandas Query Results:\n", pandas_results)
+        return pd.DataFrame({"Error": [f"Error executing Pandas query: {error_message}"]})
+
+
+
+def process_query(user_query, llm_model, db_path=None, df=None):
+    try:
+        if db_path:
+            sql_query = generate_sql_query(user_query, llm_model)
+            return execute_sql_query(sql_query, db_path)
+        elif df is not None:
+            Pandas_query = generate_pandas_query(user_query, llm_model)
+            return execute_pandas_query(Pandas_query, df)
+        else:
+            return "Error: No query provided"
+
+    except Exception as e:
+        return f"Processing Error: {str(e)}"
+
+
+
+if __name__ == "__main__":
+    from langchain_service import initialize_langchain_service
+
+    llm_models = initialize_langchain_service()
+
+    # Test SQL Query Execution
+    test_sql_query = "Show all employees in New York City earning more than 50,000 USD"
+    sql_results = process_query(test_sql_query, llm_models, db_path="../../uploads/test.db", df=None)
+    print("\n🔹 SQL Query Results:\n", sql_results)
+
+    # Test Pandas Query Execution
+    # test_pandas_query = "Show all customer_ids for customers in GO"
+    # df = pd.read_csv("terranova.csv")  # Load CSV
+    # pandas_results = process_query(test_pandas_query, llm_models, db_path=None, df=df)
+    # print("\n🔹 Pandas Query Results:\n", pandas_results)
+        return pd.DataFrame({"Error": [f"Error executing Pandas query: {error_message}"]})
+
+
+
+def process_query(user_query, llm_model, db_path=None, df=None):
+    try:
+        if db_path:
+            sql_query = generate_sql_query(user_query, llm_model)
+            return execute_sql_query(sql_query, db_path)
+        elif df is not None:
+            Pandas_query = generate_pandas_query(user_query, llm_model)
+            return execute_pandas_query(Pandas_query, df)
+        else:
+            return "Error: No query provided"
+
+    except Exception as e:
+        return f"Processing Error: {str(e)}"
+
+
+
+if __name__ == "__main__":
+    from langchain_service import initialize_langchain_service
+
+    llm_models = initialize_langchain_service()
+
+    # Test SQL Query Execution
+    test_sql_query = "Show all employees in New York City earning more than 50,000 USD"
+    sql_results = process_query(test_sql_query, llm_models, db_path="../../uploads/test.db", df=None)
+    print("\n🔹 SQL Query Results:\n", sql_results)
+
+    # Test Pandas Query Execution
+    # test_pandas_query = "Show all customer_ids for customers in GO"
+    # df = pd.read_csv("terranova.csv")  # Load CSV
+    # pandas_results = process_query(test_pandas_query, llm_models, db_path=None, df=df)
+    # print("\n🔹 Pandas Query Results:\n", pandas_results)
+        return pd.DataFrame({"Error": [f"Error executing Pandas query: {error_message}"]})
+
+
+
+def process_query(user_query, llm_model, db_path=None, df=None):
+    try:
+        if db_path:
+            sql_query = generate_sql_query(user_query, llm_model)
+            return execute_sql_query(sql_query, db_path)
+        elif df is not None:
+            Pandas_query = generate_pandas_query(user_query, llm_model)
+            return execute_pandas_query(Pandas_query, df)
+        else:
+            return "Error: No query provided"
+
+    except Exception as e:
+        return f"Processing Error: {str(e)}"
+
+
+
+if __name__ == "__main__":
+    from langchain_service import initialize_langchain_service
+
+    llm_models = initialize_langchain_service()
+
+    # Test SQL Query Execution
+    test_sql_query = "Show all employees in New York City earning more than 50,000 USD"
+    sql_results = process_query(test_sql_query, llm_models, db_path="../../uploads/test.db", df=None)
+    print("\n🔹 SQL Query Results:\n", sql_results)
+
+    # Test Pandas Query Execution
+    # test_pandas_query = "Show all customer_ids for customers in GO"
+    # df = pd.read_csv("terranova.csv")  # Load CSV
+    # pandas_results = process_query(test_pandas_query, llm_models, db_path=None, df=df)
+    # print("\n🔹 Pandas Query Results:\n", pandas_results)
+        return pd.DataFrame({"Error": [f"Error executing Pandas query: {error_message}"]})
+
+
+
+def process_query(user_query, llm_model, db_path=None, df=None):
+    try:
+        if db_path:
+            sql_query = generate_sql_query(user_query, llm_model)
+            return execute_sql_query(sql_query, db_path)
+        elif df is not None:
+            Pandas_query = generate_pandas_query(user_query, llm_model)
+            return execute_pandas_query(Pandas_query, df)
+        else:
+            return "Error: No query provided"
+
+    except Exception as e:
+        return f"Processing Error: {str(e)}"
+
+
+
+if __name__ == "__main__":
+    from langchain_service import initialize_langchain_service
+
+    llm_models = initialize_langchain_service()
+
+    # Test SQL Query Execution
+    test_sql_query = "Show all employees in New York City earning more than 50,000 USD"
+    sql_results = process_query(test_sql_query, llm_models, db_path="../../uploads/test.db", df=None)
+    print("\n🔹 SQL Query Results:\n", sql_results)
+
+    # Test Pandas Query Execution
+    # test_pandas_query = "Show all customer_ids for customers in GO"
+    # df = pd.read_csv("terranova.csv")  # Load CSV
+    # pandas_results = process_query(test_pandas_query, llm_models, db_path=None, df=df)
+    # print("\n🔹 Pandas Query Results:\n", pandas_results)
+        return pd.DataFrame({"Error": [f"Error executing Pandas query: {error_message}"]})
+
+
+
+def process_query(user_query, llm_model, db_path=None, df=None):
+    try:
+        if db_path:
+            sql_query = generate_sql_query(user_query, llm_model)
+            return execute_sql_query(sql_query, db_path)
+        elif df is not None:
+            Pandas_query = generate_pandas_query(user_query, llm_model)
+            return execute_pandas_query(Pandas_query, df)
+        else:
+            return "Error: No query provided"
+
+    except Exception as e:
+        return f"Processing Error: {str(e)}"
+
+
+
+if __name__ == "__main__":
+    from langchain_service import initialize_langchain_service
+
+    llm_models = initialize_langchain_service()
+
+    # Test SQL Query Execution
+    test_sql_query = "Show all employees in New York City earning more than 50,000 USD"
+    sql_results = process_query(test_sql_query, llm_models, db_path="../../uploads/test.db", df=None)
+    print("\n🔹 SQL Query Results:\n", sql_results)
+
+    # Test Pandas Query Execution
+    # test_pandas_query = "Show all customer_ids for customers in GO"
+    # df = pd.read_csv("terranova.csv")  # Load CSV
+    # pandas_results = process_query(test_pandas_query, llm_models, db_path=None, df=df)
+    # print("\n🔹 Pandas Query Results:\n", pandas_results)
+        return pd.DataFrame({"Error": [f"Error executing Pandas query: {error_message}"]})
+
+
+
+def process_query(user_query, llm_model, db_path=None, df=None):
+    try:
+        if db_path:
+            sql_query = generate_sql_query(user_query, llm_model)
+            return execute_sql_query(sql_query, db_path)
+        elif df is not None:
+            Pandas_query = generate_pandas_query(user_query, llm_model)
+            return execute_pandas_query(Pandas_query, df)
+        else:
+            return "Error: No query provided"
+
+    except Exception as e:
+        return f"Processing Error: {str(e)}"
+
+
+
+if __name__ == "__main__":
+    from langchain_service import initialize_langchain_service
+
+    llm_models = initialize_langchain_service()
+
+    # Test SQL Query Execution
+    test_sql_query = "Show all employees in New York City earning more than 50,000 USD"
+    sql_results = process_query(test_sql_query, llm_models, db_path="../../uploads/test.db", df=None)
+    print("\n🔹 SQL Query Results:\n", sql_results)
+
+    # Test Pandas Query Execution
+    # test_pandas_query = "Show all customer_ids for customers in GO"
+    # df = pd.read_csv("terranova.csv")  # Load CSV
+    # pandas_results = process_query(test_pandas_query, llm_models, db_path=None, df=df)
+    # print("\n🔹 Pandas Query Results:\n", pandas_results)
+        return pd.DataFrame({"Error": [f"Error executing Pandas query: {error_message}"]})
+
+
+
+def process_query(user_query, llm_model, db_path=None, df=None):
+    try:
+        if db_path:
+            sql_query = generate_sql_query(user_query, llm_model)
+            return execute_sql_query(sql_query, db_path)
+        elif df is not None:
+            Pandas_query = generate_pandas_query(user_query, llm_model)
+            return execute_pandas_query(Pandas_query, df)
+        else:
+            return "Error: No query provided"
+
+    except Exception as e:
+        return f"Processing Error: {str(e)}"
+
+
+
+if __name__ == "__main__":
+    from langchain_service import initialize_langchain_service
+
+    llm_models = initialize_langchain_service()
+
+    # Test SQL Query Execution
+    test_sql_query = "Show all employees in New York City earning more than 50,000 USD"
+    sql_results = process_query(test_sql_query, llm_models, db_path="../../uploads/test.db", df=None)
+    print("\n🔹 SQL Query Results:\n", sql_results)
+
+    # Test Pandas Query Execution
+    # test_pandas_query = "Show all customer_ids for customers in GO"
+    # df = pd.read_csv("terranova.csv")  # Load CSV
+    # pandas_results = process_query(test_pandas_query, llm_models, db_path=None, df=df)
+    # print("\n🔹 Pandas Query Results:\n", pandas_results)
+        return pd.DataFrame({"Error": [f"Error executing Pandas query: {error_message}"]})
+
+
+
+def process_query(user_query, llm_model, db_path=None, df=None):
+    try:
+        if db_path:
+            sql_query = generate_sql_query(user_query, llm_model)
+            return execute_sql_query(sql_query, db_path)
+        elif df is not None:
+            Pandas_query = generate_pandas_query(user_query, llm_model)
+            return execute_pandas_query(Pandas_query, df)
+        else:
+            return "Error: No query provided"
+
+    except Exception as e:
+        return f"Processing Error: {str(e)}"
+
+
+
+if __name__ == "__main__":
+    from langchain_service import initialize_langchain_service
+
+    llm_models = initialize_langchain_service()
+
+    # Test SQL Query Execution
+    test_sql_query = "Show all employees in New York City earning more than 50,000 USD"
+    sql_results = process_query(test_sql_query, llm_models, db_path="../../uploads/test.db", df=None)
+    print("\n🔹 SQL Query Results:\n", sql_results)
+
+    # Test Pandas Query Execution
+    # test_pandas_query = "Show all customer_ids for customers in GO"
+    # df = pd.read_csv("terranova.csv")  # Load CSV
+    # pandas_results = process_query(test_pandas_query, llm_models, db_path=None, df=df)
+    # print("\n🔹 Pandas Query Results:\n", pandas_results)
+        return pd.DataFrame({"Error": [f"Error executing Pandas query: {error_message}"]})
+
+
+
+def process_query(user_query, llm_model, db_path=None, df=None):
+    try:
+        if db_path:
+            sql_query = generate_sql_query(user_query, llm_model)
+            return execute_sql_query(sql_query, db_path)
+        elif df is not None:
+            Pandas_query = generate_pandas_query(user_query, llm_model)
+            return execute_pandas_query(Pandas_query, df)
+        else:
+            return "Error: No query provided"
+
+    except Exception as e:
+        return f"Processing Error: {str(e)}"
+
+
+
+if __name__ == "__main__":
+    from langchain_service import initialize_langchain_service
+
+    llm_models = initialize_langchain_service()
+
+    # Test SQL Query Execution
+    test_sql_query = "Show all employees in New York City earning more than 50,000 USD"
+    sql_results = process_query(test_sql_query, llm_models, db_path="../../uploads/test.db", df=None)
+    print("\n🔹 SQL Query Results:\n", sql_results)
+
+    # Test Pandas Query Execution
+    # test_pandas_query = "Show all customer_ids for customers in GO"
+    # df = pd.read_csv("terranova.csv")  # Load CSV
+    # pandas_results = process_query(test_pandas_query, llm_models, db_path=None, df=df)
+    # print("\n🔹 Pandas Query Results:\n", pandas_results)
+        return pd.DataFrame({"Error": [f"Error executing Pandas query: {error_message}"]})
+
+
+
+def process_query(user_query, llm_model, db_path=None, df=None):
+    try:
+        if db_path:
+            sql_query = generate_sql_query(user_query, llm_model)
+            return execute_sql_query(sql_query, db_path)
+        elif df is not None:
+            Pandas_query = generate_pandas_query(user_query, llm_model)
+            return execute_pandas_query(Pandas_query, df)
+        else:
+            return "Error: No query provided"
+
+    except Exception as e:
+        return f"Processing Error: {str(e)}"
+
+
+
+if __name__ == "__main__":
+    from langchain_service import initialize_langchain_service
+
+    llm_models = initialize_langchain_service()
+
+    # Test SQL Query Execution
+    test_sql_query = "Show all employees in New York City earning more than 50,000 USD"
+    sql_results = process_query(test_sql_query, llm_models, db_path="../../uploads/test.db", df=None)
+    print("\n🔹 SQL Query Results:\n", sql_results)
+
+    # Test Pandas Query Execution
+    # test_pandas_query = "Show all customer_ids for customers in GO"
+    # df = pd.read_csv("terranova.csv")  # Load CSV
+    # pandas_results = process_query(test_pandas_query, llm_models, db_path=None, df=df)
+    # print("\n🔹 Pandas Query Results:\n", pandas_results)
+        return pd.DataFrame({"Error": [f"Error executing Pandas query: {error_message}"]})
+
+
+
+def process_query(user_query, llm_model, db_path=None, df=None):
+    try:
+        if db_path:
+            sql_query = generate_sql_query(user_query, llm_model)
+            return execute_sql_query(sql_query, db_path)
+        elif df is not None:
+            Pandas_query = generate_pandas_query(user_query, llm_model)
+            return execute_pandas_query(Pandas_query, df)
+        else:
+            return "Error: No query provided"
+
+    except Exception as e:
+        return f"Processing Error: {str(e)}"
+
+
+
+if __name__ == "__main__":
+    from langchain_service import initialize_langchain_service
+
+    llm_models = initialize_langchain_service()
+
+    # Test SQL Query Execution
+    test_sql_query = "Show all employees in New York City earning more than 50,000 USD"
+    sql_results = process_query(test_sql_query, llm_models, db_path="../../uploads/test.db", df=None)
+    print("\n🔹 SQL Query Results:\n", sql_results)
+
+    # Test Pandas Query Execution
+    # test_pandas_query = "Show all customer_ids for customers in GO"
+    # df = pd.read_csv("terranova.csv")  # Load CSV
+    # pandas_results = process_query(test_pandas_query, llm_models, db_path=None, df=df)
+    # print("\n🔹 Pandas Query Results:\n", pandas_results)
+        return pd.DataFrame({"Error": [f"Error executing Pandas query: {error_message}"]})
+
+
+
+def process_query(user_query, llm_model, db_path=None, df=None):
+    try:
+        if db_path:
+            sql_query = generate_sql_query(user_query, llm_model)
+            return execute_sql_query(sql_query, db_path)
+        elif df is not None:
+            Pandas_query = generate_pandas_query(user_query, llm_model)
+            return execute_pandas_query(Pandas_query, df)
+        else:
+            return "Error: No query provided"
+
+    except Exception as e:
+        return f"Processing Error: {str(e)}"
+
+
+
+if __name__ == "__main__":
+    from langchain_service import initialize_langchain_service
+
+    llm_models = initialize_langchain_service()
+
+    # Test SQL Query Execution
+    test_sql_query = "Show all employees in New York City earning more than 50,000 USD"
+    sql_results = process_query(test_sql_query, llm_models, db_path="../../uploads/test.db", df=None)
+    print("\n🔹 SQL Query Results:\n", sql_results)
+
+    # Test Pandas Query Execution
+    # test_pandas_query = "Show all customer_ids for customers in GO"
+    # df = pd.read_csv("terranova.csv")  # Load CSV
+    # pandas_results = process_query(test_pandas_query, llm_models, db_path=None, df=df)
+    # print("\n🔹 Pandas Query Results:\n", pandas_results)
+        return pd.DataFrame({"Error": [f"Error executing Pandas query: {error_message}"]})
+
+
+
+def process_query(user_query, llm_model, db_path=None, df=None):
+    try:
+        if db_path:
+            sql_query = generate_sql_query(user_query, llm_model)
+            return execute_sql_query(sql_query, db_path)
+        elif df is not None:
+            Pandas_query = generate_pandas_query(user_query, llm_model)
+            return execute_pandas_query(Pandas_query, df)
+        else:
+            return "Error: No query provided"
+
+    except Exception as e:
+        return f"Processing Error: {str(e)}"
+
+
+
+if __name__ == "__main__":
+    from langchain_service import initialize_langchain_service
+
+    llm_models = initialize_langchain_service()
+
+    # Test SQL Query Execution
+    test_sql_query = "Show all employees in New York City earning more than 50,000 USD"
+    sql_results = process_query(test_sql_query, llm_models, db_path="../../uploads/test.db", df=None)
+    print("\n🔹 SQL Query Results:\n", sql_results)
+
+    # Test Pandas Query Execution
+    # test_pandas_query = "Show all customer_ids for customers in GO"
+    # df = pd.read_csv("terranova.csv")  # Load CSV
+    # pandas_results = process_query(test_pandas_query, llm_models, db_path=None, df=df)
+    # print("\n🔹 Pandas Query Results:\n", pandas_results)
+        return pd.DataFrame({"Error": [f"Error executing Pandas query: {error_message}"]})
+
+
+
+def process_query(user_query, llm_model, db_path=None, df=None):
+    try:
+        if db_path:
+            sql_query = generate_sql_query(user_query, llm_model)
+            return execute_sql_query(sql_query, db_path)
+        elif df is not None:
+            Pandas_query = generate_pandas_query(user_query, llm_model)
+            return execute_pandas_query(Pandas_query, df)
+        else:
+            return "Error: No query provided"
+
+    except Exception as e:
+        return f"Processing Error: {str(e)}"
+
+
+
+if __name__ == "__main__":
+    from langchain_service import initialize_langchain_service
+
+    llm_models = initialize_langchain_service()
+
+    # Test SQL Query Execution
+    test_sql_query = "Show all employees in New York City earning more than 50,000 USD"
+    sql_results = process_query(test_sql_query, llm_models, db_path="../../uploads/test.db", df=None)
+    print("\n🔹 SQL Query Results:\n", sql_results)
+
+    # Test Pandas Query Execution
+    # test_pandas_query = "Show all customer_ids for customers in GO"
+    # df = pd.read_csv("terranova.csv")  # Load CSV
+    # pandas_results = process_query(test_pandas_query, llm_models, db_path=None, df=df)
+    # print("\n🔹 Pandas Query Results:\n", pandas_results)
+        return pd.DataFrame({"Error": [f"Error executing Pandas query: {error_message}"]})
+
+
+
+def process_query(user_query, llm_model, db_path=None, df=None):
+    try:
+        if db_path:
+            sql_query = generate_sql_query(user_query, llm_model)
+            return execute_sql_query(sql_query, db_path)
+        elif df is not None:
+            Pandas_query = generate_pandas_query(user_query, llm_model)
+            return execute_pandas_query(Pandas_query, df)
+        else:
+            return "Error: No query provided"
+
+    except Exception as e:
+        return f"Processing Error: {str(e)}"
+
+
+
+if __name__ == "__main__":
+    from langchain_service import initialize_langchain_service
+
+    llm_models = initialize_langchain_service()
+
+    # Test SQL Query Execution
+    test_sql_query = "Show all employees in New York City earning more than 50,000 USD"
+    sql_results = process_query(test_sql_query, llm_models, db_path="../../uploads/test.db", df=None)
+    print("\n🔹 SQL Query Results:\n", sql_results)
+
+    # Test Pandas Query Execution
+    # test_pandas_query = "Show all customer_ids for customers in GO"
+    # df = pd.read_csv("terranova.csv")  # Load CSV
+    # pandas_results = process_query(test_pandas_query, llm_models, db_path=None, df=df)
+    # print("\n🔹 Pandas Query Results:\n", pandas_results)
+        return pd.DataFrame({"Error": [f"Error executing Pandas query: {error_message}"]})
+
+
+
+def process_query(user_query, llm_model, db_path=None, df=None):
+    try:
+        if db_path:
+            sql_query = generate_sql_query(user_query, llm_model)
+            return execute_sql_query(sql_query, db_path)
+        elif df is not None:
+            Pandas_query = generate_pandas_query(user_query, llm_model)
+            return execute_pandas_query(Pandas_query, df)
+        else:
+            return "Error: No query provided"
+
+    except Exception as e:
+        return f"Processing Error: {str(e)}"
+
+
+
+if __name__ == "__main__":
+    from langchain_service import initialize_langchain_service
+
+    llm_models = initialize_langchain_service()
+
+    # Test SQL Query Execution
+    test_sql_query = "Show all employees in New York City earning more than 50,000 USD"
+    sql_results = process_query(test_sql_query, llm_models, db_path="../../uploads/test.db", df=None)
+    print("\n🔹 SQL Query Results:\n", sql_results)
+
+    # Test Pandas Query Execution
+    # test_pandas_query = "Show all customer_ids for customers in GO"
+    # df = pd.read_csv("terranova.csv")  # Load CSV
+    # pandas_results = process_query(test_pandas_query, llm_models, db_path=None, df=df)
+    # print("\n🔹 Pandas Query Results:\n", pandas_results)
+        return pd.DataFrame({"Error": [f"Error executing Pandas query: {error_message}"]})
+
+
+
+def process_query(user_query, llm_model, db_path=None, df=None):
+    try:
+        if db_path:
+            sql_query = generate_sql_query(user_query, llm_model)
+            return execute_sql_query(sql_query, db_path)
+        elif df is not None:
+            Pandas_query = generate_pandas_query(user_query, llm_model)
+            return execute_pandas_query(Pandas_query, df)
+        else:
+            return "Error: No query provided"
+
+    except Exception as e:
+        return f"Processing Error: {str(e)}"
+
+
+
+if __name__ == "__main__":
+    from langchain_service import initialize_langchain_service
+
+    llm_models = initialize_langchain_service()
+
+    # Test SQL Query Execution
+    test_sql_query = "Show all employees in New York City earning more than 50,000 USD"
+    sql_results = process_query(test_sql_query, llm_models, db_path="../../uploads/test.db", df=None)
+    print("\n🔹 SQL Query Results:\n", sql_results)
+
+    # Test Pandas Query Execution
+    # test_pandas_query = "Show all customer_ids for customers in GO"
+    # df = pd.read_csv("terranova.csv")  # Load CSV
+    # pandas_results = process_query(test_pandas_query, llm_models, db_path=None, df=df)
+    # print("\n🔹 Pandas Query Results:\n", pandas_results)
+        return pd.DataFrame({"Error": [f"Error executing Pandas query: {error_message}"]})
+
+
+
+def process_query(user_query, llm_model, db_path=None, df=None):
+    try:
+        if db_path:
+            sql_query = generate_sql_query(user_query, llm_model)
+            return execute_sql_query(sql_query, db_path)
+        elif df is not None:
+            Pandas_query = generate_pandas_query(user_query, llm_model)
+            return execute_pandas_query(Pandas_query, df)
+        else:
+            return "Error: No query provided"
+
+    except Exception as e:
+        return f"Processing Error: {str(e)}"
+
+
+
+if __name__ == "__main__":
+    from langchain_service import initialize_langchain_service
+
+    llm_models = initialize_langchain_service()
+
+    # Test SQL Query Execution
+    test_sql_query = "Show all employees in New York City earning more than 50,000 USD"
+    sql_results = process_query(test_sql_query, llm_models, db_path="../../uploads/test.db", df=None)
+    print("\n🔹 SQL Query Results:\n", sql_results)
+
+    # Test Pandas Query Execution
+    # test_pandas_query = "Show all customer_ids for customers in GO"
+    # df = pd.read_csv("terranova.csv")  # Load CSV
+    # pandas_results = process_query(test_pandas_query, llm_models, db_path=None, df=df)
+    # print("\n🔹 Pandas Query Results:\n", pandas_results)
+        return pd.DataFrame({"Error": [f"Error executing Pandas query: {error_message}"]})
+
+
+
+def process_query(user_query, llm_model, db_path=None, df=None):
+    try:
+        if db_path:
+            sql_query = generate_sql_query(user_query, llm_model)
+            return execute_sql_query(sql_query, db_path)
+        elif df is not None:
+            Pandas_query = generate_pandas_query(user_query, llm_model)
+            return execute_pandas_query(Pandas_query, df)
+        else:
+            return "Error: No query provided"
+
+    except Exception as e:
+        return f"Processing Error: {str(e)}"
+
+
+
+if __name__ == "__main__":
+    from langchain_service import initialize_langchain_service
+
+    llm_models = initialize_langchain_service()
+
+    # Test SQL Query Execution
+    test_sql_query = "Show all employees in New York City earning more than 50,000 USD"
+    sql_results = process_query(test_sql_query, llm_models, db_path="../../uploads/test.db", df=None)
+    print("\n🔹 SQL Query Results:\n", sql_results)
+
+    # Test Pandas Query Execution
+    # test_pandas_query = "Show all customer_ids for customers in GO"
+    # df = pd.read_csv("terranova.csv")  # Load CSV
+    # pandas_results = process_query(test_pandas_query, llm_models, db_path=None, df=df)
+    # print("\n🔹 Pandas Query Results:\n", pandas_results)

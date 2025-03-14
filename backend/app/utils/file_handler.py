@@ -41,13 +41,13 @@ def save_file(file):
     # Ensure upload folder exists
     try:
         os.makedirs(upload_folder, exist_ok=True)
-        print(f"Created/confirmed uploads directory: {upload_folder}")
+        print(f"Upload folder checked/created: {upload_folder}")
     except Exception as e:
-        print(f"Error creating upload directory: {str(e)}")
+        print(f"Error creating upload folder: {str(e)}")
         return {"error": f"Failed to create upload directory: {str(e)}"}
-
-    # Generate a unique filename to prevent overwriting existing files
+    
     try:
+        # Generate a unique filename to avoid collisions
         unique_filename = f"{uuid.uuid4().hex}.{file_extension}"
         file_path = os.path.join(upload_folder, unique_filename)
         print(f"Saving file to: {file_path}")

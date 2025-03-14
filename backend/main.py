@@ -31,7 +31,7 @@ app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50 MB limit
 
 # Enable CORS for frontend requests
 # This is needed for the React app to communicate with the Flask backend
-CORS(app)
+CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
 print("CORS enabled for all origins")
 
 # Register route blueprints
@@ -54,24 +54,16 @@ def root():
         "endpoints": {
             "file_upload": "/upload",
             "active_file": "/active-file",
-            "set_active_file": "/set-active-file",
             "query": "/query"
-        }
-    }), 200
+        },
+        "version": "1.0.0"
+    })
     
 # Run the app
 if __name__ == '__main__':
     # Get port from environment or use default
-    port = int(os.environ.get('PORT', 5000))
+    port = int(os.environ.get('PORT', 5050))
+    print(f"Starting server on port {port}...")
     
-    # Get debug mode from environment or use default
-    debug = os.environ.get('DEBUG', 'True').lower() == 'true'
-    
-    print(f"Starting Flask server on port {port}")
-    print(f"Debug mode: {debug}")
-    print(f"Upload folder: {UPLOAD_FOLDER}")
-    
-    # Start the server
-    app.run(host='0.0.0.0', port=port, debug=debug)
-    
-    print("Server shutdown")
+    # Run the Flask development server directly
+    app.run(host='0.0.0.0', port=port, debug=True)

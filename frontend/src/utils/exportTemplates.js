@@ -51,7 +51,7 @@ export const exportTemplates = [
     }
   },
   
-  // Excel templates - basic ones first
+  // Excel templates
   {
     id: 'excel-basic',
     name: 'Basic Excel',
@@ -61,382 +61,54 @@ export const exportTemplates = [
     category: 'general',
     type: 'basic',
     config: {
-      sheetName: 'Query Results',
-      addFilters: true,
-    }
-  },
-  {
-    id: 'excel-report',
-    name: 'Excel Report',
-    description: 'Formatted Excel report with title and date',
-    format: 'excel',
-    filename: 'data-report-{date}.xlsx',
-    category: 'general',
-    type: 'report',
-    config: {
-      sheetName: 'Data Report',
-      addTitle: true,
-      titleText: 'Data Analysis Report',
-      addDatetime: true,
-      addFilters: true,
-      formatNumbers: true,
-      addTotalRow: true,
-      freezeHeaderRow: true,
+      sheetName: 'Data',
+      includeHeader: true,
+      autoFilter: true,
+      freezeHeader: true
     }
   },
   
-  // JSON templates (basic ones)
+  // JSON templates
   {
     id: 'json-basic',
     name: 'Basic JSON',
-    description: 'Simple JSON array of objects',
+    description: 'Simple JSON export of all data',
     format: 'json',
     filename: 'query-results-{date}.json',
     category: 'general',
     type: 'basic',
     config: {
-      pretty: true,
-      indent: 2
+      pretty: true, // Pretty print the JSON
+      indentSize: 2
     }
   },
   {
-    id: 'json-nested',
-    name: 'Nested JSON',
-    description: 'JSON with metadata and nested results',
+    id: 'json-compact',
+    name: 'Compact JSON',
+    description: 'Compact JSON without whitespace',
     format: 'json',
-    filename: 'data-export-{date}.json',
+    filename: 'query-results-compact-{date}.json',
     category: 'general',
-    type: 'nested',
+    type: 'basic',
     config: {
-      pretty: true,
-      indent: 2,
-      addMetadata: true,
-    }
-  },
-
-  // Financial report templates
-  {
-    id: 'finance-quarterly-report',
-    name: 'Quarterly Financial Report',
-    description: 'Excel report for quarterly finances',
-    format: 'excel',
-    filename: 'quarterly-financial-report-{date}.xlsx',
-    category: 'financial',
-    type: 'report',
-    config: {
-      sheetName: 'Financial Report',
-      addTitle: true,
-      titleText: 'Quarterly Financial Report',
-      addDatetime: true,
-      addFilters: true,
-      formatNumbers: true,
-      formatCurrency: true,
-      currencySymbol: '$',
-      addTotalRow: true,
-      addSubtotals: true,
-      freezeHeaderRow: true,
-      // Apply formats based on column names
-      columnFormats: {
-        currencyColumns: ['revenue', 'sales', 'cost', 'profit', 'expense', 'price', 'amount'],
-        percentageColumns: ['margin', 'growth', 'rate', 'percent']
-      },
-      conditionalFormatting: {
-        profitLoss: true, // Highlight profit/loss
-        highlightTop: true // Highlight top values
-      }
-    }
-  },
-  {
-    id: 'finance-income-statement',
-    name: 'Income Statement',
-    description: 'Income statement template with calculations',
-    format: 'excel',
-    filename: 'income-statement-{date}.xlsx',
-    category: 'financial',
-    type: 'report',
-    config: {
-      sheetName: 'Income Statement',
-      addTitle: true,
-      titleText: 'Income Statement',
-      addDatetime: true,
-      formatNumbers: true,
-      formatCurrency: true,
-      currencySymbol: '$',
-      addTotalRow: true,
-      addSubtotals: true,
-      freezeHeaderRow: true,
-      // Define sections with subtotals
-      sections: [
-        { name: 'Revenue', subtotal: true },
-        { name: 'Expenses', subtotal: true },
-        { name: 'Net Income', formula: 'Revenue-Expenses' }
-      ],
-      columnFormats: {
-        currencyColumns: ['revenue', 'expense', 'income', 'cost', 'profit', 'sales']
-      }
-    }
-  },
-  {
-    id: 'finance-balance-sheet',
-    name: 'Balance Sheet',
-    description: 'Balance sheet with assets, liabilities and equity',
-    format: 'excel',
-    filename: 'balance-sheet-{date}.xlsx',
-    category: 'financial',
-    type: 'report',
-    config: {
-      sheetName: 'Balance Sheet',
-      addTitle: true,
-      titleText: 'Balance Sheet',
-      addDatetime: true,
-      formatNumbers: true,
-      formatCurrency: true,
-      currencySymbol: '$',
-      addTotalRow: true,
-      freezeHeaderRow: true,
-      sections: [
-        { name: 'Assets', subtotal: true },
-        { name: 'Liabilities', subtotal: true },
-        { name: 'Equity', formula: 'Assets-Liabilities' }
-      ]
-    }
-  },
-  
-  // Analysis templates
-  {
-    id: 'analysis-statistical-summary',
-    name: 'Statistical Summary',
-    description: 'Statistical analysis of numeric data',
-    format: 'excel',
-    filename: 'statistical-summary-{date}.xlsx',
-    category: 'analysis',
-    type: 'report',
-    config: {
-      sheetName: 'Statistical Summary',
-      addTitle: true,
-      titleText: 'Statistical Data Analysis',
-      addDatetime: true,
-      // Stats to calculate
-      statistics: [
-        'count',
-        'min',
-        'max',
-        'sum',
-        'average',
-        'median',
-        'stddev'
-      ]
-    }
-  },
-  
-  // This is a template for category analysis
-  {
-    id: 'analysis-category-breakdown',
-    name: 'Category Breakdown',
-    description: 'Analysis of data broken down by categories',
-    format: 'excel',
-    filename: 'category-analysis-{date}.xlsx',
-    category: 'analysis',
-    type: 'report',
-    config: {
-      sheetName: 'Category Analysis',
-      addTitle: true,
-      titleText: 'Category Breakdown Analysis',
-      addDatetime: true,
-      addCharts: true,
-      // Define what charts to include
-      charts: [
-        { type: 'pie', title: 'Category Distribution' },
-        { type: 'column', title: 'Category Comparison' }
-      ]
-    }
-  },
-  
-  // Time series analysis template
-  {
-    id: 'analysis-time-series',
-    name: 'Time Series Analysis',
-    description: 'Analysis of data over time periods',
-    format: 'excel',
-    filename: 'time-series-{date}.xlsx',
-    category: 'analysis',
-    type: 'report',
-    config: {
-      sheetName: 'Time Series Analysis',
-      addTitle: true,
-      titleText: 'Time Series Analysis',
-      addDatetime: true,
-      addCharts: true,
-      // Possible time periods
-      timePeriods: ['day', 'week', 'month', 'quarter', 'year'],
-      charts: [
-        { type: 'line', title: 'Trend Over Time' },
-        { type: 'column', title: 'Period Comparison' }
-      ]
-    }
-  },
-  
-  // Visualization templates
-  {
-    id: 'viz-dashboard-export',
-    name: 'Dashboard Export',
-    description: 'Export data formatted for dashboards',
-    format: 'excel',
-    filename: 'dashboard-data-{date}.xlsx',
-    category: 'visualization',
-    type: 'dashboard',
-    config: {
-      sheetName: 'Dashboard Data',
-      addTitle: true,
-      titleText: 'Dashboard Export',
-      addDatetime: true,
-      multiSheet: true,
-      sheets: [
-        {
-          name: 'Overview',
-          charts: [
-            { type: 'column', title: 'Summary by Category' },
-            { type: 'pie', title: 'Distribution' }
-          ]
-        },
-        {
-          name: 'Details',
-          addFilters: true,
-          freezeHeaderRow: true
-        },
-        {
-          name: 'Analysis',
-          charts: [
-            { type: 'line', title: 'Trends' },
-            { type: 'radar', title: 'Multi-factor Comparison' }
-          ]
-        }
-      ]
-    }
-  },
-  {
-    id: 'viz-geo-mapping',
-    name: 'Geographic Data Mapping',
-    description: 'Data for geographic visualization',
-    format: 'json',
-    filename: 'geo-mapping-data-{date}.json',
-    category: 'visualization',
-    type: 'geospatial',
-    config: {
-      pretty: true,
-      indent: 2,
-      geoJsonFormat: true, // Structure as GeoJSON for geographic data
-      addMetadata: true,
-      detectCoordinates: true, // Try to find lat/long columns
-      // Names that might be used for coordinates
-      fallbackCoordinateMapping: {
-        latitude: ['lat', 'latitude', 'y', 'lat_deg'],
-        longitude: ['lng', 'long', 'longitude', 'x', 'long_deg']
-      }
+      pretty: false // No pretty printing
     }
   }
 ];
 
-// Find a template by ID
-export const getTemplateById = (templateId) => {
-  // Loop through templates to find matching ID
-  for (let i = 0; i < exportTemplates.length; i++) {
-    if (exportTemplates[i].id === templateId) {
-      return exportTemplates[i];
-    }
-  }
-  // Return first template as fallback if not found
-  return exportTemplates[0];
+// Helper function to find a template by ID
+export const findTemplateById = (templateId) => {
+  return exportTemplates.find(template => template.id === templateId);
 };
 
-// Get all templates for a specific format
-export const getTemplatesByFormat = (format) => {
-  // Filter templates by format
-  let result = [];
-  for (let template of exportTemplates) {
-    if (template.format === format) {
-      result.push(template);
-    }
-  }
-  return result;
-};
-
-// Get templates by category
-export const getTemplatesByCategory = (category) => {
-  return exportTemplates.filter(template => template.category === category);
-};
-
-// Get templates by both format and category
-export const getTemplatesByFormatAndCategory = (format, category) => {
-  let matchingTemplates = [];
-  
-  // Find templates matching both format and category
-  exportTemplates.forEach(template => {
-    if (template.format === format && template.category === category) {
-      matchingTemplates.push(template);
-    }
-  });
-  
-  return matchingTemplates;
-};
-
-// Get a list of all categories
-export const getCategories = () => {
-  // Extract all categories from templates
-  let categories = [];
-  
-  exportTemplates.forEach(template => {
-    // Only add category if it's not already in the list
-    if (!categories.includes(template.category)) {
-      categories.push(template.category);
-    }
-  });
-  
-  return categories;
-};
-
-// Apply a template to export data
-export const applyTemplate = (templateId, results, columns, customConfig = {}) => {
-  // Debug logging
-  console.log('=== APPLY TEMPLATE DEBUG ===');
-  console.log('Template ID:', templateId);
-  console.log('Custom config:', customConfig);
-  
+// Prepare a template for export
+export const prepareTemplate = (templateId, results, config = {}) => {
   // Find the template
-  let foundTemplate = null;
-  for (let i = 0; i < exportTemplates.length; i++) {
-    if (exportTemplates[i].id === templateId) {
-      foundTemplate = exportTemplates[i];
-      break;
-    }
-  }
+  const foundTemplate = findTemplateById(templateId);
   
-  // Check if template was found
   if (!foundTemplate) {
-    console.error('Template not found:', templateId);
-    throw new Error(`Template with ID "${templateId}" not found`);
+    throw new Error(`Template with ID ${templateId} not found`);
   }
-  
-  console.log('Template found:', foundTemplate);
-  
-  // Copy template config so we don't change original
-  const config = JSON.parse(JSON.stringify(foundTemplate.config || {}));
-  
-  // Add custom config settings
-  for (let key in customConfig) {
-    config[key] = customConfig[key];
-  }
-  
-  // Make sure category and type are set
-  if (foundTemplate.category && !config.category) {
-    config.category = foundTemplate.category;
-  }
-  
-  if (foundTemplate.type && !config.type) {
-    config.type = foundTemplate.type;
-  }
-  
-  console.log('Final config after merging:', config);
   
   // Create filename (replace spaces with underscores and add date)
   const today = new Date();
@@ -452,6 +124,34 @@ export const applyTemplate = (templateId, results, columns, customConfig = {}) =
   // Return all the info needed for exporting
   return {
     template: foundTemplate,
+    filename,
+    config,
+    data: results
+  };
+};
+
+// Apply template to data
+export const applyTemplate = (templateId, results, columns, customConfig = {}) => {
+  // Get the basic template data
+  const templateData = prepareTemplate(templateId, results, customConfig);
+  
+  // Extract needed values
+  const { template } = templateData;
+  
+  // Merge the base config with any custom settings
+  const config = {
+    ...template.config,
+    ...customConfig,
+    category: template.category,
+    type: template.type
+  };
+  
+  // Process the filename
+  const filename = processFilename(templateData.filename);
+  
+  // Return the full configuration
+  return {
+    template,
     filename,
     config,
     data: results

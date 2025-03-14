@@ -1,27 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemIcon,
-  ListItemButton,
-  Typography,
-  Divider,
-  Box,
-  Chip,
-  TextField,
-  FormControlLabel,
-  Switch,
-  Tabs,
-  Tab
+import { 
+  Dialog, DialogTitle, DialogContent, DialogActions, 
+  Button, Typography, Tabs, Tab, List, ListItem, 
+  ListItemButton, ListItemText, Box, Divider, Chip,
+  TextField, Switch, FormControlLabel, FormControl,
+  InputLabel, Select, MenuItem, ListItemIcon
 } from '@mui/material';
-import DownloadIcon from '@mui/icons-material/Download';
-import DescriptionIcon from '@mui/icons-material/Description';
 import TableViewIcon from '@mui/icons-material/TableView';
 import CodeIcon from '@mui/icons-material/Code';
 import FileOpenIcon from '@mui/icons-material/FileOpen';
@@ -29,10 +13,10 @@ import BarChartIcon from '@mui/icons-material/BarChart';
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
 import InsightsIcon from '@mui/icons-material/Insights';
 import CategoryIcon from '@mui/icons-material/Category';
+import DownloadIcon from '@mui/icons-material/Download';
 import { exportTemplates, getTemplatesByFormat, getTemplatesByCategory, getTemplatesByFormatAndCategory, getCategories } from '../utils/exportTemplates';
 import { processAndExport } from '../utils/templateProcessor';
 import { getFormatIcon } from '../utils/formatIcons';
-import { testStatisticalSummary, testCategoryAnalysis } from '../test-templates';
 
 // Function to get the right icon for each category
 function getCategoryIcon(category) {

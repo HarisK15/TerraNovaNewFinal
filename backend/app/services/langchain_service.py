@@ -167,3 +167,354 @@ if __name__ == "__main__":
     generated_sql = generate_pandas_query(test_query, llm_models)
 
     print("Generated SQL Query:", generated_sql)
+            'df.' in pandas_query or '[df' in pandas_query):
+        pandas_query = f"df[{pandas_query}]"  # Default to a simple filter if structure is unclear
+
+    return pandas_query
+
+
+if __name__ == "__main__":
+    llm_models = initialize_langchain_service()  # ✅ Load LLMs
+
+    test_query = "Get the average salary per department, but only for departments with at least 5 employees"
+    generated_sql = generate_pandas_query(test_query, llm_models)
+
+    print("Generated SQL Query:", generated_sql)
+            'df.' in pandas_query or '[df' in pandas_query):
+        pandas_query = f"df[{pandas_query}]"  # Default to a simple filter if structure is unclear
+
+    return pandas_query
+
+
+if __name__ == "__main__":
+    llm_models = initialize_langchain_service()  # ✅ Load LLMs
+
+    test_query = "Get the average salary per department, but only for departments with at least 5 employees"
+    generated_sql = generate_pandas_query(test_query, llm_models)
+
+    print("Generated SQL Query:", generated_sql)
+            'df.' in pandas_query or '[df' in pandas_query):
+        pandas_query = f"df[{pandas_query}]"  # Default to a simple filter if structure is unclear
+
+    return pandas_query
+
+
+if __name__ == "__main__":
+    llm_models = initialize_langchain_service()  # ✅ Load LLMs
+
+    test_query = "Get the average salary per department, but only for departments with at least 5 employees"
+    generated_sql = generate_pandas_query(test_query, llm_models)
+
+    print("Generated SQL Query:", generated_sql)
+            'df.' in pandas_query or '[df' in pandas_query):
+        pandas_query = f"df[{pandas_query}]"  # Default to a simple filter if structure is unclear
+
+    return pandas_query
+
+
+if __name__ == "__main__":
+    llm_models = initialize_langchain_service()  # ✅ Load LLMs
+
+    test_query = "Get the average salary per department, but only for departments with at least 5 employees"
+    generated_sql = generate_pandas_query(test_query, llm_models)
+
+    print("Generated SQL Query:", generated_sql)
+            'df.' in pandas_query or '[df' in pandas_query):
+        pandas_query = f"df[{pandas_query}]"  # Default to a simple filter if structure is unclear
+
+    return pandas_query
+
+
+if __name__ == "__main__":
+    llm_models = initialize_langchain_service()  # ✅ Load LLMs
+
+    test_query = "Get the average salary per department, but only for departments with at least 5 employees"
+    generated_sql = generate_pandas_query(test_query, llm_models)
+
+    print("Generated SQL Query:", generated_sql)
+            'df.' in pandas_query or '[df' in pandas_query):
+        pandas_query = f"df[{pandas_query}]"  # Default to a simple filter if structure is unclear
+
+    return pandas_query
+
+
+if __name__ == "__main__":
+    llm_models = initialize_langchain_service()  # ✅ Load LLMs
+
+    test_query = "Get the average salary per department, but only for departments with at least 5 employees"
+    generated_sql = generate_pandas_query(test_query, llm_models)
+
+    print("Generated SQL Query:", generated_sql)
+            'df.' in pandas_query or '[df' in pandas_query):
+        pandas_query = f"df[{pandas_query}]"  # Default to a simple filter if structure is unclear
+
+    return pandas_query
+
+
+if __name__ == "__main__":
+    llm_models = initialize_langchain_service()  # ✅ Load LLMs
+
+    test_query = "Get the average salary per department, but only for departments with at least 5 employees"
+    generated_sql = generate_pandas_query(test_query, llm_models)
+
+    print("Generated SQL Query:", generated_sql)
+            'df.' in pandas_query or '[df' in pandas_query):
+        pandas_query = f"df[{pandas_query}]"  # Default to a simple filter if structure is unclear
+
+    return pandas_query
+
+
+if __name__ == "__main__":
+    llm_models = initialize_langchain_service()  # ✅ Load LLMs
+
+    test_query = "Get the average salary per department, but only for departments with at least 5 employees"
+    generated_sql = generate_pandas_query(test_query, llm_models)
+
+    print("Generated SQL Query:", generated_sql)
+            'df.' in pandas_query or '[df' in pandas_query):
+        pandas_query = f"df[{pandas_query}]"  # Default to a simple filter if structure is unclear
+
+    return pandas_query
+
+
+if __name__ == "__main__":
+    llm_models = initialize_langchain_service()  # ✅ Load LLMs
+
+    test_query = "Get the average salary per department, but only for departments with at least 5 employees"
+    generated_sql = generate_pandas_query(test_query, llm_models)
+
+    print("Generated SQL Query:", generated_sql)
+            'df.' in pandas_query or '[df' in pandas_query):
+        pandas_query = f"df[{pandas_query}]"  # Default to a simple filter if structure is unclear
+
+    return pandas_query
+
+
+if __name__ == "__main__":
+    llm_models = initialize_langchain_service()  # ✅ Load LLMs
+
+    test_query = "Get the average salary per department, but only for departments with at least 5 employees"
+    generated_sql = generate_pandas_query(test_query, llm_models)
+
+    print("Generated SQL Query:", generated_sql)
+            'df.' in pandas_query or '[df' in pandas_query):
+        pandas_query = f"df[{pandas_query}]"  # Default to a simple filter if structure is unclear
+
+    return pandas_query
+
+
+if __name__ == "__main__":
+    llm_models = initialize_langchain_service()  # ✅ Load LLMs
+
+    test_query = "Get the average salary per department, but only for departments with at least 5 employees"
+    generated_sql = generate_pandas_query(test_query, llm_models)
+
+    print("Generated SQL Query:", generated_sql)
+            'df.' in pandas_query or '[df' in pandas_query):
+        pandas_query = f"df[{pandas_query}]"  # Default to a simple filter if structure is unclear
+
+    return pandas_query
+
+
+if __name__ == "__main__":
+    llm_models = initialize_langchain_service()  # ✅ Load LLMs
+
+    test_query = "Get the average salary per department, but only for departments with at least 5 employees"
+    generated_sql = generate_pandas_query(test_query, llm_models)
+
+    print("Generated SQL Query:", generated_sql)
+            'df.' in pandas_query or '[df' in pandas_query):
+        pandas_query = f"df[{pandas_query}]"  # Default to a simple filter if structure is unclear
+
+    return pandas_query
+
+
+if __name__ == "__main__":
+    llm_models = initialize_langchain_service()  # ✅ Load LLMs
+
+    test_query = "Get the average salary per department, but only for departments with at least 5 employees"
+    generated_sql = generate_pandas_query(test_query, llm_models)
+
+    print("Generated SQL Query:", generated_sql)
+            'df.' in pandas_query or '[df' in pandas_query):
+        pandas_query = f"df[{pandas_query}]"  # Default to a simple filter if structure is unclear
+
+    return pandas_query
+
+
+if __name__ == "__main__":
+    llm_models = initialize_langchain_service()  # ✅ Load LLMs
+
+    test_query = "Get the average salary per department, but only for departments with at least 5 employees"
+    generated_sql = generate_pandas_query(test_query, llm_models)
+
+    print("Generated SQL Query:", generated_sql)
+            'df.' in pandas_query or '[df' in pandas_query):
+        pandas_query = f"df[{pandas_query}]"  # Default to a simple filter if structure is unclear
+
+    return pandas_query
+
+
+if __name__ == "__main__":
+    llm_models = initialize_langchain_service()  # ✅ Load LLMs
+
+    test_query = "Get the average salary per department, but only for departments with at least 5 employees"
+    generated_sql = generate_pandas_query(test_query, llm_models)
+
+    print("Generated SQL Query:", generated_sql)
+            'df.' in pandas_query or '[df' in pandas_query):
+        pandas_query = f"df[{pandas_query}]"  # Default to a simple filter if structure is unclear
+
+    return pandas_query
+
+
+if __name__ == "__main__":
+    llm_models = initialize_langchain_service()  # ✅ Load LLMs
+
+    test_query = "Get the average salary per department, but only for departments with at least 5 employees"
+    generated_sql = generate_pandas_query(test_query, llm_models)
+
+    print("Generated SQL Query:", generated_sql)
+            'df.' in pandas_query or '[df' in pandas_query):
+        pandas_query = f"df[{pandas_query}]"  # Default to a simple filter if structure is unclear
+
+    return pandas_query
+
+
+if __name__ == "__main__":
+    llm_models = initialize_langchain_service()  # ✅ Load LLMs
+
+    test_query = "Get the average salary per department, but only for departments with at least 5 employees"
+    generated_sql = generate_pandas_query(test_query, llm_models)
+
+    print("Generated SQL Query:", generated_sql)
+            'df.' in pandas_query or '[df' in pandas_query):
+        pandas_query = f"df[{pandas_query}]"  # Default to a simple filter if structure is unclear
+
+    return pandas_query
+
+
+if __name__ == "__main__":
+    llm_models = initialize_langchain_service()  # ✅ Load LLMs
+
+    test_query = "Get the average salary per department, but only for departments with at least 5 employees"
+    generated_sql = generate_pandas_query(test_query, llm_models)
+
+    print("Generated SQL Query:", generated_sql)
+            'df.' in pandas_query or '[df' in pandas_query):
+        pandas_query = f"df[{pandas_query}]"  # Default to a simple filter if structure is unclear
+
+    return pandas_query
+
+
+if __name__ == "__main__":
+    llm_models = initialize_langchain_service()  # ✅ Load LLMs
+
+    test_query = "Get the average salary per department, but only for departments with at least 5 employees"
+    generated_sql = generate_pandas_query(test_query, llm_models)
+
+    print("Generated SQL Query:", generated_sql)
+            'df.' in pandas_query or '[df' in pandas_query):
+        pandas_query = f"df[{pandas_query}]"  # Default to a simple filter if structure is unclear
+
+    return pandas_query
+
+
+if __name__ == "__main__":
+    llm_models = initialize_langchain_service()  # ✅ Load LLMs
+
+    test_query = "Get the average salary per department, but only for departments with at least 5 employees"
+    generated_sql = generate_pandas_query(test_query, llm_models)
+
+    print("Generated SQL Query:", generated_sql)
+            'df.' in pandas_query or '[df' in pandas_query):
+        pandas_query = f"df[{pandas_query}]"  # Default to a simple filter if structure is unclear
+
+    return pandas_query
+
+
+if __name__ == "__main__":
+    llm_models = initialize_langchain_service()  # ✅ Load LLMs
+
+    test_query = "Get the average salary per department, but only for departments with at least 5 employees"
+    generated_sql = generate_pandas_query(test_query, llm_models)
+
+    print("Generated SQL Query:", generated_sql)
+            'df.' in pandas_query or '[df' in pandas_query):
+        pandas_query = f"df[{pandas_query}]"  # Default to a simple filter if structure is unclear
+
+    return pandas_query
+
+
+if __name__ == "__main__":
+    llm_models = initialize_langchain_service()  # ✅ Load LLMs
+
+    test_query = "Get the average salary per department, but only for departments with at least 5 employees"
+    generated_sql = generate_pandas_query(test_query, llm_models)
+
+    print("Generated SQL Query:", generated_sql)
+            'df.' in pandas_query or '[df' in pandas_query):
+        pandas_query = f"df[{pandas_query}]"  # Default to a simple filter if structure is unclear
+
+    return pandas_query
+
+
+if __name__ == "__main__":
+    llm_models = initialize_langchain_service()  # ✅ Load LLMs
+
+    test_query = "Get the average salary per department, but only for departments with at least 5 employees"
+    generated_sql = generate_pandas_query(test_query, llm_models)
+
+    print("Generated SQL Query:", generated_sql)
+            'df.' in pandas_query or '[df' in pandas_query):
+        pandas_query = f"df[{pandas_query}]"  # Default to a simple filter if structure is unclear
+
+    return pandas_query
+
+
+if __name__ == "__main__":
+    llm_models = initialize_langchain_service()  # ✅ Load LLMs
+
+    test_query = "Get the average salary per department, but only for departments with at least 5 employees"
+    generated_sql = generate_pandas_query(test_query, llm_models)
+
+    print("Generated SQL Query:", generated_sql)
+            'df.' in pandas_query or '[df' in pandas_query):
+        pandas_query = f"df[{pandas_query}]"  # Default to a simple filter if structure is unclear
+
+    return pandas_query
+
+
+if __name__ == "__main__":
+    llm_models = initialize_langchain_service()  # ✅ Load LLMs
+
+    test_query = "Get the average salary per department, but only for departments with at least 5 employees"
+    generated_sql = generate_pandas_query(test_query, llm_models)
+
+    print("Generated SQL Query:", generated_sql)
+            'df.' in pandas_query or '[df' in pandas_query):
+        pandas_query = f"df[{pandas_query}]"  # Default to a simple filter if structure is unclear
+
+    return pandas_query
+
+
+if __name__ == "__main__":
+    llm_models = initialize_langchain_service()  # ✅ Load LLMs
+
+    test_query = "Get the average salary per department, but only for departments with at least 5 employees"
+    generated_sql = generate_pandas_query(test_query, llm_models)
+
+    print("Generated SQL Query:", generated_sql)
+            'df.' in pandas_query or '[df' in pandas_query):
+        pandas_query = f"df[{pandas_query}]"  # Default to a simple filter if structure is unclear
+
+    return pandas_query
+
+
+if __name__ == "__main__":
+    llm_models = initialize_langchain_service()  # ✅ Load LLMs
+
+    test_query = "Get the average salary per department, but only for departments with at least 5 employees"
+    generated_sql = generate_pandas_query(test_query, llm_models)
+
+    print("Generated SQL Query:", generated_sql)
