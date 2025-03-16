@@ -6,18 +6,16 @@ import re
 import numpy as np
 
 def get_database_schema(file_path):
-    """Extract table and column names from an SQLite database or CSV file."""
     try:
-        abs_file_path = os.path.abspath(file_path)  # Ensure absolute path
-        print(f"✅ DEBUG: Checking file at {abs_file_path}")
+        abs_file_path = os.path.abspath(file_path)  
+        print(f"Checking file at {abs_file_path}")
 
-        # Determine file type based on extension
         file_extension = os.path.splitext(abs_file_path)[1].lower()
         
         schema = {}
         
+        # check whether file uploaded is a database 
         if file_extension == '.db':
-            # Handle SQLite database
             conn = sqlite3.connect(abs_file_path)
             cursor = conn.cursor()
 
@@ -26,7 +24,7 @@ def get_database_schema(file_path):
             tables = [row[0] for row in cursor.fetchall()]
             print(f"✅ DEBUG: Found Tables: {tables}")
 
-            # Get column names for each table
+            # extract column names from upload for use in llm
             for table in tables:
                 cursor.execute(f"PRAGMA table_info({table});")
                 columns = [row[1] for row in cursor.fetchall()]
@@ -34,10 +32,9 @@ def get_database_schema(file_path):
                 print(f"✅ DEBUG: Columns in {table}: {columns}")
 
             conn.close()
-            
+
+        # check if file uploaded is a csv file
         elif file_extension == '.csv':
-            # Handle CSV file
-            # Read a small sample to get column names
             df_sample = pd.read_csv(abs_file_path, nrows=5)
             # Always use 'data' as the table name for CSV files
             schema['data'] = df_sample.columns.tolist()
