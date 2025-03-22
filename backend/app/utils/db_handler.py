@@ -4,11 +4,14 @@ import pandas as pd
 import json
 import re
 import numpy as np
+import logging
+
+logger = logging.getLogger(__name__)
 
 def get_database_schema(file_path):
     try:
         abs_file_path = os.path.abspath(file_path)  
-        print(f"Checking file at {abs_file_path}")
+        logger.info(f"Checking file at {abs_file_path}")
 
         file_extension = os.path.splitext(abs_file_path)[1].lower()
         
@@ -22,6 +25,7 @@ def get_database_schema(file_path):
             # Get all table names
             cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
             tables = [row[0] for row in cursor.fetchall()]
+            logger.info(f"Following Tables found: {tables}")
             print(f"✅ DEBUG: Found Tables: {tables}")
 
             # extract column names from upload for use in llm
@@ -29,7 +33,7 @@ def get_database_schema(file_path):
                 cursor.execute(f"PRAGMA table_info({table});")
                 columns = [row[1] for row in cursor.fetchall()]
                 schema[table] = columns
-                print(f"✅ DEBUG: Columns in {table}: {columns}")
+                logger.info(f"Columns in {table}: {columns}")
 
             conn.close()
 
@@ -38,12 +42,12 @@ def get_database_schema(file_path):
             df_sample = pd.read_csv(abs_file_path, nrows=5)
             # Always use 'data' as the table name for CSV files
             schema['data'] = df_sample.columns.tolist()
-            print(f"✅ DEBUG: CSV Columns: {schema['data']}")
+            logger.info(f"CSV Columns: {schema['data']}")
             
         return schema
 
     except Exception as e:
-        return {"error": f"⚠️ Error processing file: {str(e)}"}
+        return {"error": f"Error processing file: {str(e)}"}
 
 def format_schema_for_prompt(schema):
     """Format the schema information for the LLM prompt."""
@@ -77,7 +81,7 @@ def format_schema_for_prompt(schema):
                         formatted_schema.append("Example Values:")
                         for col, value in example_values.items():
                             formatted_schema.append(f"  - {col}: {value}")
-                else:  # CSV file
+                else:  
                     df = pd.read_csv(file_path, nrows=1)
                     if not df.empty:
                         example_values = df.iloc[0].to_dict()
@@ -85,27 +89,16 @@ def format_schema_for_prompt(schema):
                         for col, value in example_values.items():
                             formatted_schema.append(f"  - {col}: {value}")
         except Exception as e:
-            pass  # Silently fail if we can't get example values
+            pass 
             
         formatted_schema.append("")
     
     return "\n".join(formatted_schema)
 
 def execute_pandas_query(file_path, pandas_code):
-    """
-    Execute a pandas query on a CSV file.
-    
-    Args:
-        file_path (str): Path to the CSV file
-        pandas_code (str): Pandas query code to execute
-        
-    Returns:
-        dict: Contains the query execution results or error information
-    """
+    """Execute a pandas query on a CSV file."""
     try:
-        # Resolve to an absolute path if needed
         abs_file_path = os.path.abspath(file_path)
-        
         if not os.path.exists(abs_file_path):
             return {"success": False, "error": f"File not found: {file_path}"}
         
@@ -116,17 +109,17 @@ def execute_pandas_query(file_path, pandas_code):
             return {"success": False, "error": "This operation is only supported for CSV files"}
             
         # Read the CSV file
-        print(f"Successfully read CSV file: {abs_file_path}")
+        logger.info(f"Successfully read CSV file: {abs_file_path}")
         df = pd.read_csv(abs_file_path)
-        print(f"DataFrame shape: {df.shape}")
-        print(f"DataFrame columns: {df.columns.tolist()}")
+        logger.info(f"DataFrame shape: {df.shape}")
+        logger.info(f"DataFrame columns: {df.columns.tolist()}")
         
         # Special case for simple column selection like df[['col1', 'col2']]
         column_selection_pattern = r"df\[\[(.+)\]\]"
         match = re.search(column_selection_pattern, pandas_code)
         if match:
             columns_str = match.group(1)
-            print(f"Detected simple column selection: {columns_str}")
+            logger.info(f"Detected simple column selection: {columns_str}")
             
             # Extract column names from the string
             try:
@@ -137,31 +130,31 @@ def execute_pandas_query(file_path, pandas_code):
                     clean_col = col_str.strip().strip("'").strip('"')
                     requested_columns.append(clean_col)
                 
-                print(f"Requested columns: {requested_columns}")
+                logger.info(f"Requested columns: {requested_columns}")
                 # Filter to only include columns that exist in the DataFrame
                 valid_columns = [col for col in requested_columns if col in df.columns]
-                print(f"Valid columns found in DataFrame: {valid_columns}")
+                logger.info(f"Valid columns found in DataFrame: {valid_columns}")
                 
                 if valid_columns:
                     result_df = df[valid_columns]
-                    print(f"Successfully selected columns: {valid_columns}")
+                    logger.info(f"Successfully selected columns: {valid_columns}")
                     return {
                         "success": True,
                         "results": result_df.to_dict(orient='records'),
                         "columns": valid_columns
                     }
                 else:
-                    print("No valid columns found in DataFrame")
+                    logger.info("No valid columns found in DataFrame")
                     return {
                         "success": False,
                         "error": f"None of the requested columns {requested_columns} were found in the DataFrame. Available columns are: {df.columns.tolist()}"
                     }
             except Exception as column_error:
-                print(f"Error processing column selection: {str(column_error)}")
+                logger.info(f"Error processing column selection: {str(column_error)}")
                 # Fall through to standard execution
         
         # Execute the pandas code directly
-        print(f"Running pandas code: {pandas_code[:100]}...")
+        logger.info(f"Running pandas code: {pandas_code[:100]}...")
         
         # Create locals dictionary with the DataFrame
         locals_dict = {'df': df, 'result': None}
@@ -171,7 +164,7 @@ def execute_pandas_query(file_path, pandas_code):
             exec(f"result = {pandas_code}", {'pd': pd, 'np': np, '__builtins__': {}}, locals_dict)
             
         except Exception as exec_error:
-            print(f"Error executing pandas code: {str(exec_error)}")
+            logger.info(f"Error executing pandas code: {str(exec_error)}")
             return {
                 "success": False,
                 "error": f"Error executing pandas code: {str(exec_error)}"
@@ -179,19 +172,18 @@ def execute_pandas_query(file_path, pandas_code):
         
         # Handle value_counts results with duplicate column names
         if isinstance(locals_dict['result'], pd.DataFrame) and len(locals_dict['result'].columns) == 2 and locals_dict['result'].columns.duplicated().any():
-            print("Fixing duplicate column names in value_counts() result")
+            logger.info("Fixing duplicate column names in value_counts() result")
             locals_dict['result'].columns = ["value", "count"]
         
         # If result is a DataFrame, convert it to a dictionary for JSON
         if isinstance(locals_dict['result'], pd.DataFrame):
-            print(f"Query results shape: {locals_dict['result'].shape}")
+            logger.info(f"Query results shape: {locals_dict['result'].shape}")
             if not locals_dict['result'].empty:
-                print(f"First few results:")
-                print(locals_dict['result'].head(3))
+                logger.info(f"First few results:\n{locals_dict['result'].head(3)}")
                 
                 # Check for duplicate column names and fix them
                 if any(locals_dict['result'].columns.duplicated()):
-                    print("Found duplicate column names, renaming them")
+                    logger.info("Found duplicate column names, renaming them")
                     # Rename duplicate columns by adding a number suffix
                     cols = list(locals_dict['result'].columns)
                     for i, col in enumerate(cols):
@@ -209,7 +201,7 @@ def execute_pandas_query(file_path, pandas_code):
                 "columns": locals_dict['result'].columns.tolist()
             }
         elif isinstance(locals_dict['result'], pd.Series):
-            print(f"Result is a Series with shape: {locals_dict['result'].shape}")
+            logger.info(f"Result is a Series with shape: {locals_dict['result'].shape}")
             # Convert Series to DataFrame first
             result_df = locals_dict['result'].reset_index()
             
@@ -226,7 +218,7 @@ def execute_pandas_query(file_path, pandas_code):
             }
         else:
             # Handle scalar or other types
-            print(f"Result is not a DataFrame or Series: {type(locals_dict['result'])}")
+            logger.info(f"Result is not a DataFrame or Series: {type(locals_dict['result'])}")
             # Convert to a single-item list for consistency
             return {
                 "success": True,
@@ -235,7 +227,7 @@ def execute_pandas_query(file_path, pandas_code):
             }
             
     except Exception as e:
-        print(f"Error in execute_pandas_query: {str(e)}")
+        logger.info(f"Error in execute_pandas_query: {str(e)}")
         return {
             "success": False,
             "error": str(e)
@@ -267,8 +259,8 @@ def execute_query(file_path, sql_query):
             df = pd.read_csv(abs_file_path)
             
             # Print the first few rows and column names for debugging
-            print(f"✅ DEBUG: CSV DataFrame columns: {df.columns.tolist()}")
-            print(f"✅ DEBUG: CSV DataFrame sample data:\n{df.head(3)}")
+            logger.info(f"CSV DataFrame columns: {df.columns.tolist()}")
+            logger.info(f"CSV DataFrame sample data:\n{df.head(3)}")
             
             # CSV files need special handling - we'll create a temporary SQLite database in memory
             conn = sqlite3.connect(":memory:")
@@ -282,26 +274,26 @@ def execute_query(file_path, sql_query):
             cursor = conn.cursor()
             cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
             tables = cursor.fetchall()
-            print(f"✅ DEBUG: Tables in memory DB: {tables}")
+            logger.info(f"Tables in memory DB: {tables}")
             
             # Get column names from the table
             cursor.execute(f"PRAGMA table_info({table_name});")
             columns = [row[1] for row in cursor.fetchall()]
-            print(f"✅ DEBUG: Columns in memory DB table: {columns}")
+            logger.info(f"Columns in memory DB table: {columns}")
             
             # Print the SQL query being executed
-            print(f"✅ DEBUG: Executing SQL Query on CSV data: {sql_query}")
+            logger.info(f"Executing SQL Query on CSV data: {sql_query}")
             
             # Execute the query
             try:
                 results = pd.read_sql_query(sql_query, conn)
-                print(f"✅ DEBUG: Query results shape: {results.shape}")
+                logger.info(f"Query results shape: {results.shape}")
                 if not results.empty:
-                    print(f"✅ DEBUG: First few results:\n{results.head(3)}")
+                    logger.info(f"First few results:\n{results.head(3)}")
                 else:
-                    print("✅ DEBUG: Query returned no results")
+                    logger.info("Query returned no results")
             except Exception as e:
-                print(f"⚠️ ERROR executing SQL query: {str(e)}")
+                logger.info(f"Error executing SQL query: {str(e)}")
                 raise
             finally:
                 conn.close()

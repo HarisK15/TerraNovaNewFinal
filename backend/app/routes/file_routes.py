@@ -1,4 +1,3 @@
-
 import os
 from flask import Blueprint, request, jsonify
 from app.utils.file_handler import save_file
@@ -12,6 +11,5 @@ def upload_file():
     file = request.files.get("file")
     if not file:
         return jsonify({"error": "No file uploaded"}), 400
-
     result = save_file(file)
     return jsonify(result), 200

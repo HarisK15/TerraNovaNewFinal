@@ -3,9 +3,12 @@ from flask import Flask, jsonify
 from flask_cors import CORS
 from dotenv import load_dotenv
 
+# Author: Haris — March 2025
+
+
 # Import route blueprints
 from app.routes.file_routes import file_routes
-from app.routes.query_routes import query_routes
+from app.routes.query_routes import query_bp
 
 # Print some startup info
 print("Starting server...")
@@ -36,7 +39,7 @@ print("CORS enabled for all origins")
 
 # Register route blueprints
 app.register_blueprint(file_routes)
-app.register_blueprint(query_routes)
+app.register_blueprint(query_bp)
 print("Route blueprints registered")
 
 # Add a simple health check endpoint
