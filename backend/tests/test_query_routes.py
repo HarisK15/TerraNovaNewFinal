@@ -1,8 +1,5 @@
-"""
-Basic test for the query_routes module.
-
-Tests the core query processing functionality.
-"""
+# Tests for the /query route
+# Covers basic query processing using mocking
 
 import unittest
 import os
@@ -11,28 +8,26 @@ import json
 from unittest.mock import patch
 import pandas as pd
 
-# Add the parent directory to path to allow importing app modules
+# Add parent directory to sys.path for imports
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app import create_app
 from app.utils.shared_state import SharedState
 
 
-class TestQueryRoutes(unittest.TestCase):
-    """Basic test for the query processing endpoint."""
+class QueryRouteTests(unittest.TestCase):
     
     def setUp(self):
-        """Set up test client and mocks."""
-        # Create Flask test client
+        # Init Flask
         self.app = create_app()
         self.app.config['TESTING'] = True
         self.client = self.app.test_client()
         
-        # Reset shared state
+        # Set a test file in shared state
         self.shared_state = SharedState()
         self.shared_state.active_file = os.path.join(os.path.dirname(__file__), "test_data.csv")
         
-        # Create a test CSV if it doesn't exist
+        # Create test CSV 
         if not os.path.exists(self.shared_state.active_file):
             pd.DataFrame({
                 'id': [1, 2],
@@ -41,32 +36,27 @@ class TestQueryRoutes(unittest.TestCase):
             }).to_csv(self.shared_state.active_file, index=False)
     
     def tearDown(self):
-        """Clean up test files."""
+        # Clean up the test CSV
         if os.path.exists(self.shared_state.active_file):
             os.remove(self.shared_state.active_file)
     
     @patch('app.routes.query_routes.process_query')
-    def test_process_query(self, mock_process_query):
-        """Test the query processing endpoint."""
-        # Mock the query processing function
+    def test_query_post_returns_data(self, mock_process_query):
+        # Simulate a query result
         mock_process_query.return_value = pd.DataFrame({
             'name': ['John'],
             'city': ['London']
         })
-        
-        # Make request
-        query_data = {
-            'query': 'Show me data for London'
-        }
-        response = self.client.post('/query', data=json.dumps(query_data), 
-                                   content_type='application/json')
-        
-        # Check response
+
+        response = self.client.post(
+            '/query',
+            data=json.dumps({'query': 'Show me data for London'}),
+            content_type='application/json'
+        )
+
         self.assertEqual(response.status_code, 200)
         response_data = json.loads(response.data)
         self.assertIn('results', response_data)
-        
-        # Verify mock was called
         mock_process_query.assert_called_once()
 
 

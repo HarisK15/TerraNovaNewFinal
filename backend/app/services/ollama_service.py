@@ -6,11 +6,6 @@ from dotenv import load_dotenv
 import logging
 
 
-logging.basicConfig(
-    level=logging.DEBUG, 
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
-
 logger = logging.getLogger(__name__)
 load_dotenv()
 
@@ -20,7 +15,7 @@ MODEL_NAME = os.getenv('MODEL_NAME', 'llama3')
 QUERY_TYPE_SQL = 'sql'
 QUERY_TYPE_PANDAS = 'pandas'
 
-def generate_sql_query(user_query, schema_info):
+def get_sql_query(user_query, schema_info):
     """Generate a SQL query using Ollama's API based on a natural language query and database schema."""
     # fine tuned prompt
     # Prompt needs to be super specific or the model gives weird results hence why its so long
@@ -73,9 +68,9 @@ Finally, please generate a valid SQL query to answer this question: "{user_query
             "message": "Failed to generate SQL query"
         }
 
-def generate_pandas_query(user_query, schema_info):
+def get_pandas_query(user_query, schema_info):
     """Generate a Pandas query from natural language using Ollama."""
-    export_intent = detect_export_intent(user_query)
+    export_meta = detect_export_meta(user_query)
     
     # try to extract columns from the schema
     available_columns = []
@@ -87,13 +82,13 @@ def generate_pandas_query(user_query, schema_info):
                 available_columns = [col.strip() for col in columns_part.split(',')]
     logger.debug(f"Available columns: {available_columns}")
     
-    if export_intent.get("is_export", False):
-        mapped = export_intent.get("mapped_columns") or export_intent.get("columns") or []
+    if export_meta.get("is_export", False):
+        mapped = export_meta.get("mapped_columns") or export_meta.get("columns") or []
         if not mapped:
             mapped = available_columns
         # remove duplicates
         mapped = list(dict.fromkeys(mapped))  
-        export_intent["mapped_columns"] = mapped
+        export_meta["mapped_columns"] = mapped
         # Build a column selection statemtn
         if mapped:
             column_list = ", ".join([f"'{col}'" for col in mapped])
@@ -105,7 +100,7 @@ def generate_pandas_query(user_query, schema_info):
             "success": True,
             "query_type": QUERY_TYPE_PANDAS,
             "pandas_query": pandas_query,
-            "export_intent": export_intent
+            "export_meta": export_meta
         }
     
     # otherwise fine tuned prompt
@@ -134,8 +129,8 @@ When generating Pandas queries, please follow these guidelines:
 16. For export requests, filter and select only the requested columns. Ensure the requested columns exist in the DataFrame.
 """
     
-    if export_intent.get("is_export", False):
-        column_list = ", ".join([f"'{col}'" for col in export_intent["mapped_columns"]])
+    if export_meta.get("is_export", False):
+        column_list = ", ".join([f"'{col}'" for col in export_meta["mapped_columns"]])
         prompt += f"\n\nThis query is an EXPORT request. Generate code that selects these columns: [{column_list}]\n"
         prompt += f"Your export code MUST check if each column exists before selecting it. Only select columns that exist in the dataframe.\n"
         prompt += f"For example, use: df[[col for col in [{column_list}] if col in df.columns]]\n"
@@ -143,8 +138,8 @@ When generating Pandas queries, please follow these guidelines:
     prompt += f"\nGenerate ONLY a single valid Python/Pandas expression to answer this question: \"{user_query}\"\n"
     prompt += "\nReturn ONLY the final expression without any explanation, comments or markdown formatting."
     
-    if export_intent.get("is_export", False):
-        prompt += f"\n\nExport Intent Detected: {export_intent.get('format', '')} format, template type: {export_intent.get('template_type', '')}, requested columns: {export_intent.get('columns', [])}, mapped columns: {export_intent.get('mapped_columns', [])}"
+    if export_meta.get("is_export", False):
+        prompt += f"\n\nExport Intent Detected: {export_meta.get('format', '')} format, template type: {export_meta.get('template_type', '')}, requested columns: {export_meta.get('columns', [])}, mapped columns: {export_meta.get('mapped_columns', [])}"
     
     
     payload = {
@@ -178,14 +173,14 @@ When generating Pandas queries, please follow these guidelines:
         }
 
 # added for templates feature, although templates not fully implemented so can be simplified
-def detect_export_intent(user_query):
+def detect_export_meta(user_query):
     user_query_lower = user_query.lower()
     
     # Check for export intent keywords
     export_keywords = ["export", "download", "save", "extract", "output", "create"]
-    has_export_intent = any(keyword in user_query_lower for keyword in export_keywords)
+    has_export_meta = any(keyword in user_query_lower for keyword in export_keywords)
     
-    if not has_export_intent:
+    if not has_export_meta:
         return {"is_export": False}
     
     # Detect format
@@ -234,20 +229,23 @@ def detect_export_intent(user_query):
             identified_columns.append(clean_col)
         columns = list(set(identified_columns))
     columns.sort(key=len, reverse=True)
-    export_intent = {
+    export_meta = {
         "is_export": True,
         "format": detected_format,
         "template_type": template_type,
         "columns": columns,
         "mapped_columns": []
     }
-    return export_intent
+    return export_meta
 
 def explain_query_results(results, user_query):
     """Generate a natural language explanation of the query results."""
     prompt = f"""Based on the following query results for the question "{user_query}":
 
-{results}"""
+{results}
+
+Provide a clear, concise explanation of what these results mean in plain English. Focus only on the key insights, facts, and patterns within the data. Keep your response direct, factual, and avoid showing your thinking process or mentioning the SQL query. Make it sound like a direct answer to the user's question in a conversational tone, under 3-4 sentences if possible.
+"""
     
     payload = {
         "model": MODEL_NAME,
@@ -261,7 +259,7 @@ def explain_query_results(results, user_query):
         response = requests.post(OLLAMA_API_URL, json=payload)
         response.raise_for_status()
         raw_model_response = response.json()
-        explanation = raw_model_response.get("message", {}).get("content", "").strip()
+        explanation = raw_model_response.get('message', {}).get('content', '').strip()
         
         return {
             "success": True,

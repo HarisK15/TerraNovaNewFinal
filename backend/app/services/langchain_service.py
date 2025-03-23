@@ -27,7 +27,7 @@ def initialize_langchain_service():
 
 
 
-def generate_sql_query(user_input, llm_model, db_path):
+def get_sql_query(user_input, llm_model, db_path):
     sql_llm = llm_model["sql"]
     schema = get_database_schema(db_path)
     print(f"Extracted Schema: {schema}")
@@ -66,9 +66,9 @@ def generate_sql_query(user_input, llm_model, db_path):
 
     # Using langchain to connect the prompt engineering with the llm model
     chain = prompt_template | sql_llm
-    ai_response = chain.invoke({"question": user_input})
+    llm_response = chain.invoke({"question": user_input})
 
-    ai_text = str(ai_response).strip()
+    ai_text = str(llm_response).strip()
 
     sql_query = ai_text.replace("```sql", "").replace("```", "").strip()
     return sql_query
@@ -76,7 +76,7 @@ def generate_sql_query(user_input, llm_model, db_path):
 
 
 
-def generate_pandas_query(user_input, llm_model):
+def get_pandas_query(user_input, llm_model):
     csv_llm = llm_model["csv"]
 
     # Prompt engineering the llm to work better with dataset proivded
@@ -111,10 +111,10 @@ def generate_pandas_query(user_input, llm_model):
 
     # Using langchain to connect the prompt engineering with the llm model 
     chain = prompt_template | csv_llm
-    ai_response = chain.invoke({"question": user_input})
+    llm_response = chain.invoke({"question": user_input})
 
     #Extract text from AIMessage 
-    ai_text = str(ai_response).strip()
+    ai_text = str(llm_response).strip()
 
     #Apply regex to extract Pandas query
     match = re.search(r"df\[[^\]]+\]", ai_text)
@@ -134,5 +134,5 @@ def generate_pandas_query(user_input, llm_model):
 if __name__ == "__main__":
     llm_models = initialize_langchain_service() 
     test_query = "Get the average salary per department, but only for departments with at least 5 employees"
-    generated_sql = generate_pandas_query(test_query, llm_models)
+    generated_sql = get_pandas_query(test_query, llm_models)
     logger.info(f"Generated SQL Query: {generated_sql}")

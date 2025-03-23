@@ -1,47 +1,40 @@
-"""
-Basic test for the ollama_service module.
-
-Tests the response cleaning functionality for the Ollama API integration.
-"""
+# Basic tests for the Ollama response cleaner
 
 import unittest
 import os
 import sys
 
-# Add the parent directory to path to allow importing app modules
+# Add the parent directory so we can import app modules
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app.services.ollama_service import clean_response
 
 
-class TestOllamaService(unittest.TestCase):
-    """Basic tests for the Ollama service response handling."""
+class TestCleanResponse(unittest.TestCase):
     
     def setUp(self):
-        """Set up tests with mock Ollama responses."""
-        # Mock response with the new message format
-        self.mock_ollama_response_with_message = {
+        # Mocked responses in two formats
+        self.new_format = {
             "model": "llama3",
             "message": {
                 "content": "```python\ndf[df['city'] == 'London']\n```",
                 "role": "assistant"
             }
         }
-        
-        # Mock response with the old format
-        self.mock_ollama_response_old_format = {
+
+        self.old_format = {
             "model": "llama3",
             "response": "```python\ndf[df['city'] == 'London']\n```"
         }
-    
-    def test_clean_response_new_format(self):
-        """Test cleaning a response with the new message format."""
-        cleaned = clean_response(self.mock_ollama_response_with_message)
+
+    def test_new_response_format(self):
+        # Should extract from the 'message' field
+        cleaned = clean_response(self.new_format)
         self.assertEqual(cleaned, "df[df['city'] == 'London']")
-    
-    def test_clean_response_old_format(self):
-        """Test cleaning a response with the old format."""
-        cleaned = clean_response(self.mock_ollama_response_old_format)
+
+    def test_old_response_format(self):
+        # Should extract from the 'response' field
+        cleaned = clean_response(self.old_format)
         self.assertEqual(cleaned, "df[df['city'] == 'London']")
 
 
