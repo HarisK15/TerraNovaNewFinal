@@ -7,7 +7,14 @@ import logging
 # todo: Add logging when pushing
 # todo: Fix file path bug when running on Windows
 
+logging.basicConfig(
+    level=logging.DEBUG,  
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
+
 logger = logging.getLogger(__name__)
+
+
 query_bp = Blueprint("query_bp", __name__, url_prefix="/")
 
 # file stored globally so it can be used by other routes

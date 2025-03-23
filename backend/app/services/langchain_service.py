@@ -10,8 +10,13 @@ from app.utils.db_handler import get_database_schema
 import logging
 
 
+logging.basicConfig(
+    level=logging.DEBUG,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
 
 logger = logging.getLogger(__name__)
+
 
 # both initialized separately incase model needs to be changed later (particularly mistral for the pandas queries)
 def initialize_langchain_service():

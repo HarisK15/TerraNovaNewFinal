@@ -7,7 +7,14 @@ from app.services.langchain_service import generate_sql_query, generate_pandas_q
 from app.utils.shared_state import SharedState 
 import logging
 
+logging.basicConfig(
+    level=logging.DEBUG, 
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
+
 logger = logging.getLogger(__name__)
+
+
 
 def execute_sql_query(query, db_path):
     """Execute an SQL query against a SQLite database file."""
