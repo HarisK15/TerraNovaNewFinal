@@ -9,7 +9,4 @@ root.render(
     <App />
   </React.StrictMode>
 );
-
-// Performance measurement code removed
-// If you need to measure performance in your app, you can add
-// a performance measurement library later
+// add performance measurement (maybe)
