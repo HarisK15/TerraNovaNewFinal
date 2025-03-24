@@ -6,14 +6,16 @@ import sys
 import pandas as pd
 import sqlite3
 
+# So we can import app modules
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from app.services.query_executor import execute_sql_query, execute_pandas_query
+from app.services.query_executor import run_sql_query, run_pandas_query
 
 
-class QueryExecutorTests(unittest.TestCase):
+class TestQueryExecution(unittest.TestCase):
     
     def setUp(self):
+        # Set up a testing SQLite DB
         self.db_path = os.path.join(os.path.dirname(__file__), "test_database.db")
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
@@ -32,27 +34,34 @@ class QueryExecutorTests(unittest.TestCase):
         conn.commit()
         conn.close()
         
+        # Create a small DF to test Pandas
         self.df = pd.DataFrame({
             'name': ['John', 'Jane'],
             'city': ['London', 'New York']
         })
     
     def tearDown(self):
-        # Clean up test DB
+        # Clean up test DB after test
         if os.path.exists(self.db_path):
             os.remove(self.db_path)
     
     def test_sql_query_runs(self):
         query = "SELECT * FROM employees WHERE city = 'London'"
-        results = execute_sql_query(query, self.db_path)
+        results = run_sql_query(query, self.db_path)
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0]["name"], "John")
     
     def test_pandas_query_runs(self):
         query = "df[df['city'] == 'London']"
-        result = execute_pandas_query(query, self.df)
+        result = run_pandas_query(query, self.df)
         self.assertEqual(len(result), 1)
         self.assertEqual(result.iloc[0]['name'], "John")
+
+    def test_pandas_invalid_query(self):
+        # Just checking it doesn’t crash on bad input
+        query = "df[df['nonexistent'] == 'London']"
+        result = run_pandas_query(query, self.df)
+        self.assertIn("Error", result.columns)
 
 
 if __name__ == '__main__':

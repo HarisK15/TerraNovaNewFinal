@@ -63,7 +63,7 @@ def set_active_file():
     }), 200
 
 @query_bp.route("/query", methods=["POST"])
-def process_query():
+def handle_query():
     data = request.json
     user_query = data.get("query")
     file_path = data.get("filePath", active_file_path)

@@ -5,20 +5,24 @@ import re
 from dotenv import load_dotenv
 import logging
 
-
+logging.basicConfig(
+    level=logging.DEBUG, 
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
 logger = logging.getLogger(__name__)
-load_dotenv()
 
+
+
+load_dotenv()
 OLLAMA_API_URL = os.getenv('OLLAMA_API_URL', 'http://localhost:11434/api/chat')
 MODEL_NAME = os.getenv('MODEL_NAME', 'llama3')
 
 QUERY_TYPE_SQL = 'sql'
 QUERY_TYPE_PANDAS = 'pandas'
 
+# Generate SQL using Ollama
 def get_sql_query(user_query, schema_info):
-    """Generate a SQL query using Ollama's API based on a natural language query and database schema."""
-    # fine tuned prompt
-    # Prompt needs to be super specific or the model gives weird results hence why its so long
+    # Prompt needs to be super specific, following prompt worked better during testing
     prompt = f"""You're an SQL assistant. Using the following database schema:
 
 {schema_info}

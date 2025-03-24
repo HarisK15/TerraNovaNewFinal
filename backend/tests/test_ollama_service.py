@@ -4,16 +4,14 @@ import unittest
 import os
 import sys
 
-# Add the parent directory so we can import app modules
+# So we can import app modules
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
 from app.services.ollama_service import clean_response
 
-
 class TestCleanResponse(unittest.TestCase):
-    
+
     def setUp(self):
-        # Mocked responses in two formats
+        # Setup mock 
         self.new_format = {
             "model": "llama3",
             "message": {
@@ -21,7 +19,6 @@ class TestCleanResponse(unittest.TestCase):
                 "role": "assistant"
             }
         }
-
         self.old_format = {
             "model": "llama3",
             "response": "```python\ndf[df['city'] == 'London']\n```"
@@ -36,6 +33,11 @@ class TestCleanResponse(unittest.TestCase):
         # Should extract from the 'response' field
         cleaned = clean_response(self.old_format)
         self.assertEqual(cleaned, "df[df['city'] == 'London']")
+
+    def test_empty_response(self):
+        # Should return an empty string if nothing useful is found
+        cleaned = clean_response({})
+        self.assertEqual(cleaned, "")
 
 
 if __name__ == '__main__':

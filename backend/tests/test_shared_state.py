@@ -1,10 +1,10 @@
-# Tests for the SharedState singleton behavior
+# testing that SharedState is actually a singleton
 
 import unittest
 import os
 import sys
 
-# import modules
+# So we can import the app module properly
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app.utils.shared_state import SharedState
@@ -18,10 +18,9 @@ class SharedStateTests(unittest.TestCase):
         self.shared_state.active_file = None
 
     def test_singleton_behavior(self):
-        # Make sure all instances share the same state
+        # Check that two instances reflect the same shared state
         a = SharedState()
         b = SharedState()
-
         a.active_file = "mock_data.csv"
         self.assertEqual(b.active_file, "mock_data.csv")
 
