@@ -5,113 +5,150 @@ import {
 } from 'recharts';
 import { Box, Typography, FormControl, InputLabel, Select, MenuItem, Paper } from '@mui/material';
 
-// Colours for chart
-const COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff8042', '#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
-// Creates visualizations from query results
+// purple colours
+const Colours = ['#8884d8', '#82ca9d', '#ffc658', '#ff8042', '#0088FE', '#00C49F'];
+
+// vizualization component
 const DataVisualization = ({ results, columns }) => {
   const [chartType, setChartType] = useState('bar');
   const [xAxis, setXAxis] = useState('');
   const [yAxis, setYAxis] = useState(''); 
   const [chartData, setChartData] = useState([]);
   const [shouldShowChart, setShouldShowChart] = useState(false);
-  
-  // Check if cahrt can be shown for the data
+
+
+
+  // tried using callback but  didn't work
+  // check if the data is good for charts
   useEffect(() => {
-    // No data, no chart
-    if (!results || results.length === 0 || !columns || columns.length === 0) {
+    // check if data present
+    if (!results ||results.length === 0||!columns ||columns.length===0) {
       setShouldShowChart(false);
       return;
     }
-    let hasNumericData = false;
+    // look for number columns
+    let hasNumbers = false;
     for (let i = 0; i < results.length; i++) {
       let row = results[i];
       for (let j = 0; j < columns.length; j++) {
         let col = columns[j];
         if (!isNaN(row[col]) && row[col] !== null && row[col] !== '') {
-          hasNumericData = true;
+          hasNumbers = true;
           break;
         }
       }
-      if (hasNumericData) break;
+      if (hasNumbers) break;
     }
-    setShouldShowChart(results.length <= 10 && hasNumericData);
-    
-    // pick some colums for chart
-    if (results.length <= 10 && hasNumericData) {
-      let numericColumns = [];
+
+    // only show charts for small data with numbers
+    if (results.length <= 10 && hasNumbers) {
+      setShouldShowChart(true);
+      
+      // TODO: This is a bit messy but it works for now
+      // try to pick some columns for the chart
+      let numColumns = [];
       let textColumns = [];
-      
-      let firstRow = results[0];
-      for (let col of columns) {
-        if (!isNaN(firstRow[col]) && firstRow[col] !== null && firstRow[col] !== '') {
-          numericColumns.push(col);
+      let row1 = results[0];
+      for (let c = 0; c < columns.length; c++) {
+        let colName = columns[c];
+        // check if it's a number
+        if (!isNaN(row1[colName]) && row1[colName] !== null) {
+          numColumns.push(colName);
         } else {
-          textColumns.push(col);
+          textColumns.push(colName);
         }
       }
       
-      // Pick something for x/y so the chart shows up
-      if (textColumns.length > 0) {
+      // pick axes based on what we have
+      if (textColumns.length >= 1) {
         setXAxis(textColumns[0]);
-        if (numericColumns.length > 0) {
-          setYAxis(numericColumns[0]);
+        if (numColumns.length >= 1) {
+          setYAxis(numColumns[0]);
         }
-      } else if (numericColumns.length > 0) {
-        setYAxis(numericColumns[0]);
+      } else {
         setXAxis('index');
+        if (numColumns.length >= 1) {
+          setYAxis(numColumns[0]);
+        }
       }
+    } else {
+      setShouldShowChart(false);
     }
   }, [results, columns]);
 
-  // Create the chart data
+  // make the chart data
   useEffect(() => {
-    if (!results|| results.length=== 0|| !xAxis||!yAxis) {
+    if (!results || !results.length || !xAxis || !yAxis) {
       setChartData([]);
       return;
     }
 
-    // Format data for charts
-    let data = [];
-    
+    // Todo:optimize
+    let newData = [];
+    // make data for chart
     for (let i = 0; i < results.length; i++) {
       let row = results[i];
-      let entry = {
-        name: xAxis === 'index' ? `Item ${i + 1}` : String(row[xAxis] || `Item ${i + 1}`),
-        value: parseFloat(row[yAxis]) || 0
-      };
-      
-      // Add other columns for tooltips
-      for (let col of columns) {
-        entry[col] = row[col];
+      // still working on better labels for pie charts
+      let name = '';
+      if (xAxis === 'index') {
+        name = 'Item ' + (i+1);
+      } else {
+        name = String(row[xAxis] || '');
       }
-      
-      data.push(entry);
+      // kept getting Nan error hence below code added
+      let val = 0;
+      if (!isNaN(row[yAxis])) {
+        val = parseFloat(row[yAxis]);
+      }
+
+      let dataPoint = {
+        name: name,
+        value: val
+      };
+      for (let j = 0; j < columns.length; j++) {
+        let col = columns[j];
+        dataPoint[col] = row[col];
+      }
+      newData.push(dataPoint);
     }
     
-    setChartData(data);
+    // limimit number of points
+    setChartData(newData.slice(0, 20));
   }, [results, columns, xAxis, yAxis]);
-
-  // Don't show anything if we shouldn't
   if (!shouldShowChart) {
     return null;
   }
 
-  const handleChartTypeChange = (event) => {
+
+
+
+
+
+
+
+
+  // handle changes below
+  function handleChartTypeChange(event) {
     setChartType(event.target.value);
-  };
-  
-  const handleXAxisChange = (event) => {
+  }
+  function handleXAxisChange(event) {
     setXAxis(event.target.value);
-  };
-  
-  const handleYAxisChange = (event) => {
+  }
+  function handleYAxisChange(event) {
     setYAxis(event.target.value);
-  };
+  }
 
-  // TODO: Add more chart types
-  // TODO: Fix tooltips
-  // TODO: Add export
 
+
+
+  // Todo:
+  // - Fix the pie chart labels
+  // - Add export to PNG
+  // - Add more chart types?
+
+
+
+  
   return (
     <Paper sx={{ p: 3, mt: 3, borderRadius: 2, boxShadow: 3 }}>
       <Typography variant="h6" gutterBottom>
@@ -119,7 +156,7 @@ const DataVisualization = ({ results, columns }) => {
       </Typography>
 
       <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
-        {/* Chart type selector */}
+        {/* dropdown for chart type */}
         <FormControl size="small" sx={{ minWidth: 120 }}>
           <InputLabel>Chart Type</InputLabel>
           <Select
@@ -133,7 +170,7 @@ const DataVisualization = ({ results, columns }) => {
           </Select>
         </FormControl>
 
-        {/* X axis selector */}
+        {/* dropdown for x axis */}
         <FormControl size="small" sx={{ minWidth: 150 }}>
           <InputLabel>X Axis</InputLabel>
           <Select
@@ -141,14 +178,16 @@ const DataVisualization = ({ results, columns }) => {
             label="X Axis"
             onChange={handleXAxisChange}
           >
-            {columns.map((col, index) => (
-              <MenuItem key={col + "-" + index} value={col}>{col}</MenuItem>
-            ))}
+            {
+              columns.map((col, i) => {
+                return <MenuItem key={col + "-" + i} value={col}>{col}</MenuItem>
+              })
+            }
             <MenuItem value="index">Row Index</MenuItem>
           </Select>
         </FormControl>
 
-        {/* Y axis selector */}
+        {/* dropdown for y axis */}
         <FormControl size="small" sx={{ minWidth: 150 }}>
           <InputLabel>Y Axis</InputLabel>
           <Select
@@ -156,13 +195,16 @@ const DataVisualization = ({ results, columns }) => {
             label="Y Axis"
             onChange={handleYAxisChange}
           >
-            {columns.map((col, index) => (
-              <MenuItem key={col + "-" + index} value={col}>{col}</MenuItem>
-            ))}
+            {
+              columns.map((col, i) => {
+                return <MenuItem key={col + "-" + i} value={col}>{col}</MenuItem>
+              })
+            }
           </Select>
         </FormControl>
       </Box>
 
+      {/* chart container */}
       <Box sx={{ height: 400 }}>
         <ResponsiveContainer width="100%" height="100%">
           {chartType === 'bar' && (
@@ -189,8 +231,8 @@ const DataVisualization = ({ results, columns }) => {
                 nameKey="name"
                 label={({name, percent}) => `${name}: ${(percent * 100).toFixed(0)}%`}
               >
-                {chartData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                {chartData.map((entry, i) => (
+                  <Cell key={`cell-${i}`} fill={Colours[i % Colours.length]} />
                 ))}
               </Pie>
               <Tooltip />
@@ -213,5 +255,4 @@ const DataVisualization = ({ results, columns }) => {
     </Paper>
   );
 };
-
 export default DataVisualization;
