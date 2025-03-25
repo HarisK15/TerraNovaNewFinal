@@ -12,7 +12,7 @@ const debug = true;
 
 // process transformation 
 export const processTransformation = (templateId, data, columns, config = {}) => {
-  console.log('Processing transformation for template:', templateId);
+  console.log('Processing:', templateId);
   // console.log('Data sample:', data.slice(0, 2));
   // Get template properties
   const { category, type } = config;
@@ -34,7 +34,7 @@ export const processTransformation = (templateId, data, columns, config = {}) =>
       }
     }
     
-    console.log('Found numeric columns:', num_cols);
+    console.log('Found columns->', num_cols);
     
     // For each numeric column, calculate stats
     let summaryData = [
@@ -115,7 +115,7 @@ export const processTransformation = (templateId, data, columns, config = {}) =>
     // }
     
     if (categoryCol) {
-      console.log('Using column for categories:', categoryCol);
+      console.log(' found column for categories:', categoryCol);
       
       // Find numeric columns
       let numericColumns = [];
@@ -303,7 +303,7 @@ export const processTransformation = (templateId, data, columns, config = {}) =>
     }
   }
   
-  console.log('No transformation available');
+  console.log('Nothing available');
   return null;
 };
 
@@ -312,7 +312,7 @@ export const processAndExport = (templateId, results, columns, customConfig = {}
   // Get template configuration with processed data
   const { template, filename, config, data } = applyTemplate(templateId, results, columns, customConfig);
   
-  console.log("Processing template:", template.id, "Category:", template.category, "Type:", template.type);
+  console.log("Processing:", template.id, "Category:", template.category, "type:", template.type);
   
   // Process based on format
   switch (template.format) {

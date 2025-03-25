@@ -225,18 +225,17 @@ useEffect(() => {
     if (msgs.length === 0) {
       return (
         <Box 
-          key="empty-state" 
-          sx={{
+          style={{ 
             display: 'flex', 
-            flexDirection: 'column',
-            alignItems: 'center',
+            flexDirection: 'column', 
+            alignItems: 'center', 
             justifyContent: 'center',
-            padding: '40px',
-            backgroundColor: '#f9f9f9',
-            borderRadius: '12px', 
-            border: '1px dashed #ccc',
+            padding: '32px',
+            backgroundColor: lightPurple,
+            borderRadius: '8px',
+            border: '1px dashed',
+            borderColor: '#ccc',
           }}
-          style={{minHeight: '300px', marginTop: '16px', borderColor: '#ccc'}}
         >
           <HelpOutlineIcon style={{ fontSize: '36px', color: '#666', marginBottom: '16px' }} />
           <Typography variant="h6" style={{ marginBottom: '16px', fontWeight: 600, textAlign: 'center' }}>
@@ -256,13 +255,7 @@ useEffect(() => {
       if (message.type === 'user') {
         return (
           <Box key={index} sx={{ display: 'flex', justifyContent: 'flex-end' }} m={2}>
-            <Box 
-              style={{maxWidth: '78%'}}
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-              }}
-            >
+            <Box style={{ maxWidth: '80%' }}>
               <Box 
                 p={2}
                 style={{ 
@@ -297,13 +290,28 @@ useEffect(() => {
         return (
           <Box key={index} style={{ display: 'flex', marginBottom: '16px' }}>
             <Box 
-              sx={{
-                backgroundColor: '#ffebee',
-                padding: '12px 16px',
-                borderRadius: '12px',
-                marginRight: '8px',
+              sx={{ 
+                width: 30, 
+                height: 30, 
+                borderRadius: '50%', 
+                bgcolor: '#f44336',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'white',
+                mr: 1
               }}
-              style={{color: 'red', fontWeight: 500}}
+            >
+              <SmartToyIcon fontSize="small" />
+            </Box>
+            <Box 
+              style={{ 
+                backgroundColor: '#f44336',
+                color: 'white',
+                borderRadius: '12px 12px 12px 0',
+                padding: '16px',
+                maxWidth: '80%'
+              }}
             >
               <Typography>{message.content}</Typography>
             </Box>
@@ -472,7 +480,9 @@ useEffect(() => {
             elevation={0}
             sx={{ p: 3, mb: 3, width: '100%' }}
             style={{
-              borderRadius: '12px',
+              border: '1px solid',
+              borderColor: '#ccc',
+              borderRadius: '8px',
               backgroundColor: lightPurple
             }}
           >
@@ -522,7 +532,6 @@ useEffect(() => {
             onSubmit={sendQuery} 
             loading={loading} 
             disabled={!activeFile}
-            style={{marginTop: '8px'}}
             // showSuggestions={true} 
           />
           
@@ -542,7 +551,6 @@ useEffect(() => {
         columns={exportData?.columns || []}
         initialFormat="xlsx"
         initialTemplateType="basic"
-        style={{maxHeight: '90vh'}}
       /> : null /* has to be here for some reason */}
     </Box>
   );

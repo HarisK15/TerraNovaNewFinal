@@ -1,33 +1,38 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
-import { AppBar, Toolbar, Typography, Container, Box, Button } from '@mui/material';
+import { AppBar, Toolbar, Typography, Container, Box, Button, IconButton } from '@mui/material';
 import TerminalIcon from '@mui/icons-material/Terminal';
+import HomeIcon from '@mui/icons-material/Home'; 
 import { Link } from 'react-router-dom';
+import DarkModeIcon from '@mui/icons-material/DarkMode'; 
 
+ 
 // Import pages
 import Home from './pages/Home';
 import QueryPage from './pages/QueryPage';
+// import AboutPage from './pages/About'; 
 
-// Create a modern theme with gradient accents
+// still figuring out the best color scheme
+// colours need to clean these up later
 const theme = createTheme({
   palette: {
     mode: 'light',
     primary: {
-      main: '#7F56D9',  // Modern purple
+      main: '#7F56D9', 
       light: '#9E77ED',
       dark: '#6941C6',
       contrastText: '#FFFFFF'
     },
     secondary: {
-      main: '#F670C7',  // Vibrant pink
+      main: '#F670C7',  
       light: '#FDA7DF',
       dark: '#E64BB5',
       contrastText: '#FFFFFF'
     },
     background: {
-      default: '#FAFAFF',  // Very slight purple tint to white
+      default: '#FAFAFF',  
       paper: '#FFFFFF'
     },
     text: {
@@ -38,12 +43,24 @@ const theme = createTheme({
   },
   typography: {
     fontFamily: '"-apple-system", "BlinkMacSystemFont", "Inter", "Roboto", sans-serif',
-    h1: { fontWeight: 700 },
-    h2: { fontWeight: 700 },
-    h3: { fontWeight: 600 },
-    h4: { fontWeight: 600 },
-    h5: { fontWeight: 500 },
-    h6: { fontWeight: 500 },
+    h1: { 
+      fontWeight: 700 
+    },
+    h2: { 
+      fontWeight: 700 
+    },
+    h3: { 
+      fontWeight: 600 
+    },
+    h4: { 
+      fontWeight: 600 
+    },
+    h5: { 
+      fontWeight: 500 
+    },
+    h6: { 
+      fontWeight: 500 
+    },
     button: {
       fontWeight: 500,
       textTransform: 'none',
@@ -55,9 +72,7 @@ const theme = createTheme({
   shadows: [
     'none',
     '0px 1px 3px rgba(16, 24, 40, 0.1), 0px 1px 2px rgba(16, 24, 40, 0.06)',
-    '0px 4px 8px -2px rgba(16, 24, 40, 0.1), 0px 2px 4px -2px rgba(16, 24, 40, 0.06)',
     '0px 12px 16px -4px rgba(16, 24, 40, 0.08), 0px 4px 6px -2px rgba(16, 24, 40, 0.03)',
-    '0px 20px 24px -4px rgba(16, 24, 40, 0.08), 0px 8px 8px -4px rgba(16, 24, 40, 0.03)',
     ...Array(20).fill('none')
   ],
   components: {
@@ -80,7 +95,7 @@ const theme = createTheme({
     },
     MuiButton: {
       styleOverrides: {
-        root: {
+        root: { 
           borderRadius: 8,
           padding: '10px 18px',
           fontWeight: 500,
@@ -106,11 +121,14 @@ const theme = createTheme({
   }
 });
 
+// trying to add loading state but not using it yet
+// const [isLoading, setIsLoading] = useState(false)
 function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <Router>
+
         <Box sx={{ 
           display: 'flex', 
           flexDirection: 'column', 
@@ -140,7 +158,6 @@ function App() {
                   flexGrow: 1,
                   textDecoration: 'none',
                   color: 'text.primary',
-                  letterSpacing: '-0.01em'
                 }}
               >
                 TerraNova
@@ -160,10 +177,12 @@ function App() {
           <Container maxWidth="lg" sx={{ mt: 4, mb: 4, flexGrow: 1 }}>
             <Routes>
               <Route path="/" element={<Home />} />
-              <Route path="/query" element={<QueryPage />} />
+              <Route path="/query" element={
+                <QueryPage />} />
             </Routes>
           </Container>
           
+
           <Box 
             component="footer" 
             sx={{ 
@@ -178,7 +197,7 @@ function App() {
           >
             <Container maxWidth="sm">
               <Typography variant="body2" color="text.secondary" align="center">
-                TerraNova © {new Date().getFullYear()}
+                TerraNova &copy; {new Date().getFullYear()}
               </Typography>
             </Container>
           </Box>
@@ -189,3 +208,34 @@ function App() {
 }
 
 export default App;
+
+// const defaultSettings = {
+//   darkMode: false,
+//   fontSize: 'medium',
+//   notifications: true
+// }
+
+// function getVersion() {
+//   // Need to figure out how to get this from package.json
+//   // pass
+// }
+
+//notification feature
+// function showNotification(message) {
+//   if (!("Notification" in window)) {
+//     console.log("This browser doesn't support notifications");
+//   } else if (Notification.permission === "granted") {
+//     const notification = new Notification("TerraNova", {
+//       body: message,
+//     });
+//   } else {
+//     console.log("No notification permission");
+//   }
+// }
+
+// console.log("App.js loaded!");  
+
+// Need to implement this function - shows warning when user tries to leave
+// window.addEventListener("beforeunload", function(e) {
+//   pass
+// });
