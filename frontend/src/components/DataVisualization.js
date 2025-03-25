@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
   PieChart, Pie, Cell, LineChart, Line
 } from 'recharts';
-import { Box, Typography, FormControl, InputLabel, Select, MenuItem, Paper } from '@mui/material';
+import { Box, Typography, FormControl, InputLabel, Select, MenuItem, Paper, Button } from '@mui/material';
+import html2canvas from 'html2canvas';
+import DownloadIcon from '@mui/icons-material/Download';
 
 // purple colours
 const clrs = ['#8884d8', '#82ca9d', '#ffc658', '#ff8042', '#0088FE', '#00C49F'];
@@ -17,6 +19,7 @@ const [xAxis, setXAxis] = useState('');
 const [y_axis, set_y_axis] = useState(''); 
   const [data, setData] = useState([]);
   const [showGraph, setShowGraph] = useState(false);
+const chartRef = useRef(null);
 
 
 // tried using callback but  didn't work
@@ -122,8 +125,22 @@ for (let j = 0; j < columns.length; j++) {
     return null;
   }
 
-
-
+  // export chart as PNG
+  function saveAsPNG() {
+    if (!chartRef.current) {
+      return;
+    }
+    // use html2canvas to take screenshot
+    html2canvas(chartRef.current).then(canvas => {
+      //temporary link
+      const a = document.createElement('a');
+      a.href = canvas.toDataURL('image/png');
+      a.download = `chart-${graphType}-${new Date().getTime()}.png`;
+      a.click();
+    }).catch(err => {
+      console.log("Error", err);
+    });
+  }
 
 
   // handle changes below
@@ -199,9 +216,19 @@ for (let j = 0; j < columns.length; j++) {
             }
           </Select>
         </FormControl>
+        
+        {/* new export button */}
+        <Button 
+          variant="outlined" 
+          size="small" 
+          onClick={saveAsPNG}
+          startIcon={<DownloadIcon />}
+        >
+          Save as PNG
+        </Button>
       </Box>
 
-      <Box sx={{ height: 350, maxWidth: '100%', overflowX: 'auto' }}>
+      <Box sx={{ height: 350, maxWidth: '100%', overflowX: 'auto' }} ref={chartRef}>
         <ResponsiveContainer width="100%" height="100%">
           {graphType === 'bar' && (
             <BarChart data={data}>
