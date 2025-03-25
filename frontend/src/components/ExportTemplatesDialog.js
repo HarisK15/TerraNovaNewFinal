@@ -4,7 +4,7 @@ import {
   Button, Typography, Tabs, Tab, List, ListItem, 
   ListItemButton, ListItemText, Box, Divider, Chip,
   TextField, Switch, FormControlLabel, FormControl,
-  InputLabel, Select, MenuItem, ListItemIcon
+  InputLabel, Select, MenuItem, 
 } from '@mui/material';
 import TableViewIcon from '@mui/icons-material/TableView'; 
 import CodeIcon from '@mui/icons-material/Code'; 
@@ -18,9 +18,8 @@ import { exportTemplates, getTemplatesByFormat, getTemplatesByCategory, getTempl
 import { processAndExport } from '../utils/templateProcessor';
 import { getFormatIcon } from '../utils/formatIcons';
 
-// icons for categories
+// own function due to inline not working
 function getCategoryIcon(category) {
-  // tried using switch but this is easier to read
   if (category === 'financial') {
     return <AttachMoneyIcon />;
   } else if (category === 'analysis') {
@@ -37,6 +36,7 @@ function getCategoryIcon(category) {
 
 // Dialog for picking export templates
 const ExportTemplatesDialog = (props) => {
+  // todo:destructure
   const open = props.open;
   const handleClose = props.handleClose;
   const results = props.results;
@@ -44,134 +44,82 @@ const ExportTemplatesDialog = (props) => {
   const exportFormat = props.exportFormat;
   const exportTemplateType = props.exportType;
   
-  // all my states - probably too many but they work
-  const [selectedTemplate, setSelectedTemplate] = useState(null);
-  const [selectedFormat, setSelectedFormat] = useState(null);
+  const [currTemplate, setcurrTemplate] = useState(null);
+  const [currFormat, setcurrFormat] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState(null);
-  const [customConfig, setCustomConfig] = useState({});
+  const [myConfig, setmyConfig] = useState({});
   const [customFilename, setCustomFilename] = useState('');
   const [tabValue, setTabValue] = useState('format');
+  // Todo: dark mode
+  // not implemented yet
+  const [isDarkMode, setIsDarkMode] = useState(false); 
   
+  // auto-select format if provided
   useEffect(() => {
-    if (open) {
-      // debug stuff
-      // console.log("Dialog opened with:");
-      // console.log("- Results length:", results?.length || 0);
-      // console.log("- First few results:", results?.slice(0, 3) || []);
-      // console.log("- Columns:", columns);
-      // console.log("- Has data:", results && results.length > 0);
-      // console.log("- Format:", exportFormat);
-      // console.log("- Template type:", exportTemplateType);
-      // !!!! remove these logs before pushing
-    }
-  }, [open, results, columns, exportFormat, exportTemplateType]);
-  
-  // try to auto-pick the right template
-  useEffect(() => {
-    if (open) {
-      if (exportFormat) {
-        let formatToUse = exportFormat.toLowerCase();
-        
-        // make sure it's valid - should probably use a constant list instead
-        if (formatToUse === 'csv' || formatToUse === 'excel' || formatToUse === 'json') {
-          setSelectedFormat(formatToUse);
-          // todo: use utils func
-          let goodTemplates = [];
-          for (let i = 0; i < exportTemplates.length; i++) {
-            let template = exportTemplates[i];
-            
-            if (template.format === formatToUse) {
-              if (!exportTemplateType || template.type === exportTemplateType) {
-                goodTemplates.push(template);
-              }
-            }
-          }
-          
-          // just pick first one
-          if (goodTemplates.length > 0) {
-            setSelectedTemplate(goodTemplates[0]);
-          }
-        }
+    if (open && exportFormat) {
+      setcurrFormat(exportFormat.toLowerCase());
+      
+      // just grab the first template of this format
+      const tmpls = exportTemplates.filter(t => 
+        t.format === exportFormat.toLowerCase()
+      );
+      
+      if (tmpls.length > 0) {
+        setcurrTemplate(tmpls[0]);
       }
     }
   }, [open, exportFormat, exportTemplateType]);
   
-  // organize templates by format -inefficient but works
-  let templatesByFormat = {};
+  // Group templates by format
+  const templatesByFormat = {};
   for (let i = 0; i < exportTemplates.length; i++) {
-    let template = exportTemplates[i];
-    let format = template.format;
-    if (!templatesByFormat[format]) {
-      templatesByFormat[format] = [];
+    let tmpl = exportTemplates[i];
+    let fmt = tmpl.format;
+    if (!templatesByFormat[fmt]) {
+      templatesByFormat[fmt] = [];
     }
-    templatesByFormat[format].push(template);
+    templatesByFormat[fmt].push(tmpl);
   }
   
-  // organize templates by category 
+  // Tried to use .reduce but couldn't get it to work
   let templatesByCategory = {};
-  for (let i = 0; i < exportTemplates.length; i++) {
-    let template = exportTemplates[i];
-    let category = template.category;
-    if (!templatesByCategory[category]) {
-      templatesByCategory[category] = [];
+  exportTemplates.forEach(tmpl => {
+    if (!templatesByCategory[tmpl.category]) {
+      templatesByCategory[tmpl.category] = [];
     }
-    templatesByCategory[category].push(template);
-  }
+    templatesByCategory[tmpl.category].push(tmpl);
+  });
   
-  function handleTemplateSelect(template) {
-    // console.log("Selected template:", template.name);
-    setSelectedTemplate(template);
-    setCustomConfig({});
+  // Select a template
+  function handleTemplateSelect(tmpl) {
+    setcurrTemplate(tmpl);
+    setmyConfig({});
     setCustomFilename('');
+    console.log('template:' + tmpl.name);
   }
   
-  // for custom options 
-  function handleConfigChange(key, value) {
-    // avoid React issues
-    let newConfig = { ...customConfig };
-    newConfig[key] = value;
-    setCustomConfig(newConfig);
-  }
-  
-  // run actual export 
-  function handleExport() {
-    if (!selectedTemplate) {
-      console.log("No template selected");
-      return;
-    }
-    // add filename if they entered one 
-    let configToUse = { ...customConfig };
+  function doExport() {
+    let configToUse = { ...myConfig };
     if (customFilename) {
       configToUse.customFilename = customFilename;
     }
     
-    const result = processAndExport(
-      selectedTemplate.id,
-      results,
-      columns,
-      configToUse
-    );
-    console.log('Export worked!', result);
+      processAndExport(
+        currTemplate.id,
+        results,
+        columns,
+        configToUse
+      );
+      
+      console.log('Export worked!');
     handleClose();
   }
 
-  // Todo: Fix this, - unreliable with large datasets
-  // Currently disabled for most templates 
-  const handleTestTemplate = () => {
-    if (!selectedTemplate) {
-      console.log("No template selected for testing");
-      return;
-    }
-    console.log('=== DIRECT TEST ===');
-    console.log('Testing template:', selectedTemplate.id);
-    alert("Test feature not fully implemented yet!");
-    
-    // Old approach - was causing browser to crash
-
-
+  const testTemplate = () => {
+    console.log('Testing template:', currTemplate.id);
+    alert("Test feature not implemented yet!");
   }
   
-  //UI part - bunch of MaterialUI stuff
   return (
     <Dialog 
       open={open} 
@@ -181,166 +129,130 @@ const ExportTemplatesDialog = (props) => {
     >
       <DialogTitle>
         Export Templates
-        <Typography variant="subtitle2" color="text.secondary">
-          Choose a template to format your exported data
-        </Typography>
       </DialogTitle>
       
-      <DialogContent dividers>
-        <Box sx={{ display: 'flex', height: '400px' }}>
-          {/* Left side where you pick templates */}
-          <Box sx={{ width: '35%', borderRight: '1px solid #eee', pr: 2, overflowY: 'auto' }}>
-            <Tabs value={tabValue} onChange={(e, value) => setTabValue(value)}>
+      <DialogContent>
+        <div style={{ display: 'flex', height: '400px' }}>
+          {/* Left side */}
+          <div style={{ width: '35%', borderRight: '1px solid #eee', paddingRight: '16px', overflowY: 'auto' }}>
+            <Tabs value={tabValue} onChange={(event, newValue) => {
+              setTabValue(newValue);
+            }}>
               <Tab label="By Format" value="format" />
               <Tab label="By Category" value="category" />
             </Tabs>
             
             {/* Format tab */}
-            {tabValue === 'format' ? (
-              <>
-                <Typography variant="subtitle1" sx={{ mt: 2, mb: 1, fontWeight: 'bold' }}>
+            {tabValue === 'format' && (
+              <div>
+                <Typography variant="subtitle1" style={{ marginTop: '16px', marginBottom: '8px', fontWeight: 'bold' }}>
                   Export Format
                 </Typography>
                 
-                <List dense>
-                  {Object.keys(templatesByFormat).map((format) => (
-                    <ListItem key={format} disablePadding>
+                <List>
+                  {Object.keys(templatesByFormat).map((fmt) => (
+                    <ListItem key={fmt} disablePadding>
                       <ListItemButton 
-                        selected={selectedFormat === format}
+                        selected={currFormat === fmt}
                         onClick={() => {
-                          setSelectedFormat(format);
-                          // auto-pick first one if nothing selected
-                          if (!selectedTemplate || selectedTemplate.format !== format) {
-                            if (templatesByFormat[format].length > 0) {
-                              setSelectedTemplate(templatesByFormat[format][0]);
-                              setCustomConfig({});
-                            }
-                          }
+                          setcurrFormat(fmt);
+                          setcurrTemplate(templatesByFormat[fmt][0]);
+                          setmyConfig({});
                         }}
-                        sx={{ 
-                          borderRadius: 1,
-                          mb: 0.5,
-                          bgcolor: selectedFormat === format ? 'rgba(25, 118, 210, 0.08)' : 'transparent'
-                        }}
+                        style={{marginBottom: '4px'}}
                       >
-                        <ListItemIcon>
-                          {getFormatIcon(format)}
-                        </ListItemIcon>
-                        <ListItemText 
-                          primary={format.toUpperCase()} 
-                        />
+                        {getFormatIcon(fmt)}
+                        <ListItemText primary={fmt.toUpperCase()} style={{marginLeft: '8px'}} />
                       </ListItemButton>
                     </ListItem>
                   ))}
                 </List>
                 
-                {selectedFormat && (
-                  <>
-                    <Divider sx={{ my: 2 }} />
+                {currFormat && (
+                  <div>
+                    <Divider style={{margin: '16px 0'}} />
                     
-                    <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 'bold' }}>
-                      {selectedFormat.toUpperCase()} Templates
+                    <Typography variant="subtitle1" style={{marginBottom: '8px', fontWeight: 'bold'}}>
+                      {currFormat.toUpperCase()} Templates
                     </Typography>
                     
-                    <List dense>
-                      {templatesByFormat[selectedFormat].map((template) => (
-                        <ListItem key={template.id} disablePadding>
+                    <List>
+                      {templatesByFormat[currFormat].map((tmpl) => (
+                        <ListItem key={tmpl.id} disablePadding>
                           <ListItemButton
-                            selected={selectedTemplate && selectedTemplate.id === template.id}
-                            onClick={() => handleTemplateSelect(template)}
-                            sx={{ 
-                              borderRadius: 1, 
-                              mb: 0.5,
-                              bgcolor: selectedTemplate && selectedTemplate.id === template.id 
-                                ? 'rgba(25, 118, 210, 0.12)' 
-                                : 'transparent'
-                            }}
+                            selected={currTemplate && currTemplate.id === tmpl.id}
+                            onClick={() => handleTemplateSelect(tmpl)}
                           >
-                            <ListItemText 
-                              primary={template.name}
-                              secondary={template.description}
-                            />
+                            <div>
+                              <div>{tmpl.name}</div>
+                              <div style={{fontSize: '0.8rem', color: '#666'}}>{tmpl.description}</div>
+                            </div>
                             <Chip 
-                              label={template.category} 
+                              label={tmpl.category} 
                               size="small" 
-                              sx={{ ml: 1 }}
-                              icon={getCategoryIcon(template.category)}
+                              style={{marginLeft: '8px'}}
+                              icon={getCategoryIcon(tmpl.category)}
                             />
                           </ListItemButton>
                         </ListItem>
                       ))}
                     </List>
-                  </>
+                  </div>
                 )}
-              </>
-            ) : (
-              <>
-                <Typography variant="subtitle1" sx={{ mt: 2, mb: 1, fontWeight: 'bold' }}>
+              </div>
+            )}
+            
+            {/* Category tab */}
+            {tabValue === 'category' && (
+              <div>
+                <Typography variant="subtitle1" style={{marginTop: '16px', marginBottom: '8px', fontWeight: 'bold'}}>
                   Template Category
                 </Typography>
                 
-                {/* Category selection - WIP */}
-                <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+                <Typography variant="body2" style={{marginTop: '16px', color: '#666'}}>
                   Category filtering still in development
                 </Typography>
                 
-                {/*
-                <List dense>
+                {/* Todo: uncomment when working working 
+                <div>
                   {Object.keys(templatesByCategory).map((category) => (
-                    <ListItem key={category} disablePadding>
-                      <ListItemButton 
-                        selected={selectedCategory === category}
-                        onClick={() => {
-                          setSelectedCategory(category);
-                          // auto-pick first one in category
-                          if (!selectedTemplate || selectedTemplate.category !== category) {
-                            if (templatesByCategory[category].length > 0) {
-                              setSelectedTemplate(templatesByCategory[category][0]);
-                              setCustomConfig({});
-                            }
-                          }
-                        }}
-                        sx={{ 
-                          borderRadius: 1,
-                          mb: 0.5
-                        }}
-                      >
-                        <ListItemIcon>
-                          {getCategoryIcon(category)}
-                        </ListItemIcon>
-                        <ListItemText 
-                          primary={category.charAt(0).toUpperCase() + category.slice(1)}
-                        />
-                      </ListItemButton>
-                    </ListItem>
+                    <div key={category}>
+                      <h4>{category}</h4>
+                      <ul>
+                        {templatesByCategory[category].map(tmpl => (
+                          <li key={tmpl.id} onClick={() => handleTemplateSelect(tmpl)}>
+                            {tmpl.name}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
                   ))}
-                </List>
+                </div>
                 */}
-              </>
+              </div>
             )}
-          </Box>
+          </div>
           
-          {/* Right side for template details */}
-          <Box sx={{ width: '65%', pl: 2, overflow: 'auto' }}>
-            {selectedTemplate ? (
-              <>
+          {/* Right side */}
+          <div style={{width: '65%', paddingLeft: '16px', overflow: 'auto'}}>
+            {currTemplate ? (
+              <div>
                 <Typography variant="h6">
-                  {selectedTemplate.name}
+                  {currTemplate.name}
                 </Typography>
                 
-                <Typography variant="body2" color="text.secondary" sx={{ mt: 1, mb: 2 }}>
-                  {selectedTemplate.description}
+                <Typography variant="body2" style={{marginTop: '8px', marginBottom: '16px', color: '#666'}}>
+                  {currTemplate.description}
                 </Typography>
                 
-                <Divider sx={{ my: 2 }} />
+                <Divider style={{margin: '16px 0'}} />
                 
-                {/* This is where template config goes */}
-                <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 'bold' }}>
+                <Typography variant="subtitle1" style={{marginBottom: '16px', fontWeight: 'bold'}}>
                   Template Options
                 </Typography>
                 
-                {/* Custom filename for any template */}
-                <Box sx={{ mb: 3 }}>
+                {/* Custom filename */}
+                <div style={{marginBottom: '24px'}}>
                   <TextField
                     label="Custom Filename"
                     size="small"
@@ -349,117 +261,110 @@ const ExportTemplatesDialog = (props) => {
                     onChange={(e) => setCustomFilename(e.target.value)}
                     helperText="Leave blank for auto-generated filename"
                   />
-                </Box>
+                </div>
                 
-                {/* Options specific to this template */}
-                {selectedTemplate.config && Object.keys(selectedTemplate.config).map((optionKey) => {
-                  const option = selectedTemplate.config[optionKey];
+                {/* Template-specific options */}
+                {currTemplate.config && Object.keys(currTemplate.config).map((optKey) => {
+                  const opt = currTemplate.config[optKey];
                   
-                  // Different controls based on type
-                  if (option.type === 'boolean') {
-                    // Switch for boolean options
+                  if (opt.type === 'boolean') {
                     return (
                       <FormControlLabel
-                        key={optionKey}
+                        key={optKey}
                         control={
                           <Switch
-                            checked={customConfig[optionKey] === true}
-                            onChange={(e) => handleConfigChange(optionKey, e.target.checked)}
-                            color="primary"
+                            checked={myConfig[optKey] === true}
+                            onChange={(e) => {
+                              let newConfig = { ...myConfig };
+                              newConfig[optKey] = e.target.checked;
+                              setmyConfig(newConfig);
+                            }}
                           />
                         }
-                        label={option.label || optionKey}
+                        label={opt.label || optKey}
                       />
                     );
-                  } else if (option.type === 'select' && option.options) {
-                    // Dropdown for options list
+                  } else if (opt.type === 'select' && opt.options) {
                     return (
-                      <FormControl key={optionKey} fullWidth size="small" sx={{ mb: 2 }}>
-                        <InputLabel>{option.label || optionKey}</InputLabel>
+                      <div key={optKey} style={{marginBottom: '16px'}}>
+                        <InputLabel>{opt.label || optKey}</InputLabel>
                         <Select
-                          value={customConfig[optionKey] || option.default || ''}
-                          onChange={(e) => handleConfigChange(optionKey, e.target.value)}
-                          label={option.label || optionKey}
+                          value={myConfig[optKey] || opt.default || ''}
+                          onChange={(e) => {
+                              let newConfig = { ...myConfig };
+                              newConfig[optKey] = e.target.value;
+                              setmyConfig(newConfig);
+                          }}
+                          label={opt.label || optKey}
+                          fullWidth
+                          size="small"
                         >
-                          {option.options.map((opt) => (
-                            <MenuItem key={opt.value} value={opt.value}>
-                              {opt.label}
+                          {opt.options.map((o) => (
+                            <MenuItem key={o.value} value={o.value}>
+                              {o.label}
                             </MenuItem>
                           ))}
                         </Select>
-                      </FormControl>
+                      </div>
                     );
                   } else {
-                    // Default to text field for everything else
                     return (
                       <TextField
-                        key={optionKey}
-                        label={option.label || optionKey}
+                        key={optKey}
+                        label={opt.label || optKey}
                         size="small"
                         fullWidth
-                        sx={{ mb: 2 }}
-                        value={customConfig[optionKey] || option.default || ''}
-                        onChange={(e) => handleConfigChange(optionKey, e.target.value)}
-                        type={option.type === 'number' ? 'number' : 'text'}
+                        style={{marginBottom: '16px'}}
+                        value={myConfig[optKey] || opt.default || ''}
+                        onChange={(e) => {
+                          let newConfig = { ...myConfig };
+                          newConfig[optKey] = e.target.value;
+                          setmyConfig(newConfig);
+                        }}
+                        helperText={opt.helperText}
                       />
                     );
                   }
                 })}
                 
-                {/* TODO: Preview feature not implemented yet */}
-                <Box sx={{ mt: 3, p: 2, bgcolor: '#f5f5f5', borderRadius: 1 }}>
-                  <Typography variant="subtitle2" color="text.secondary">
-                    Preview not available yet
-                  </Typography>
-                </Box>
-              </>
+                <div style={{marginTop: '24px'}}>
+                  <Button 
+                    variant="outlined" 
+                    onClick={testTemplate}
+                    disabled={!currTemplate}
+                    style={{marginRight: '16px'}}
+                  >
+                    Test Template
+                  </Button>
+                </div>
+              </div>
             ) : (
-              <Box sx={{ 
-                display: 'flex', 
-                flexDirection: 'column', 
-                alignItems: 'center', 
-                justifyContent: 'center',
-                height: '100%'
-              }}>
-                <Typography variant="body1" color="text.secondary">
-                  Select a template to view options
+              <div style={{display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%'}}>
+                <Typography>
+                  Select a template to view details
                 </Typography>
-              </Box>
+              </div>
             )}
-          </Box>
-        </Box>
+          </div>
+        </div>
       </DialogContent>
       
       <DialogActions>
-        <Button onClick={handleClose} color="inherit">
+        <Button onClick={handleClose}>
           Cancel
         </Button>
-        
-        {/* Test button - still working on this feature */}
-        {selectedTemplate && selectedTemplate.testable && (
-          <Button
-            onClick={handleTestTemplate}
-            color="secondary"
-            variant="outlined"
-            sx={{ mr: 1 }}
-            startIcon={<BarChartIcon />}
-          >
-            Test
-          </Button>
-        )}
-        
-        <Button
-          onClick={handleExport}
-          color="primary"
-          variant="contained"
-          disabled={!selectedTemplate}
-          startIcon={<DownloadIcon />}
+        <Button 
+          onClick={doExport} 
+          variant="contained" 
+          disabled={!currTemplate}
         >
-          Export
+          Export <DownloadIcon style={{marginLeft: '8px'}} />
         </Button>
       </DialogActions>
     </Dialog>
   );
 };
-
 export default ExportTemplatesDialog;
+
+
+// fix stack error when on page for too long
