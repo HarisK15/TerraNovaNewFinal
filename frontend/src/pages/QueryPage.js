@@ -47,7 +47,8 @@ function QueryPage() {
   const [exportDialogOpen, toggleExportDialog] = useState(false);
   const [exportData, setExportData] = useState(null);
   // const [darkMode, setDarkMode] = useState(false);
-  const scrollRef = useRef(null); // This is for auto-scrolling to the bottom
+  const scrollRef = useRef(null); 
+  const chatContainerRef = useRef(null); 
   const navigate = useNavigate();
   const theme = useTheme();
   
@@ -92,6 +93,15 @@ function QueryPage() {
     }
   }, [msgs]);
 
+  // handle scrolling when new messages are added
+  useEffect(() => {
+    if (chatContainerRef.current) {
+      // Scroll to bottom when new messages are added
+      const container = chatContainerRef.current;
+      container.scrollTop = container.scrollHeight;
+    }
+  }, [msgs]);
+  
   // Function to get the active file from the backend
   const fetchActiveFile = async () => {
 
@@ -132,11 +142,11 @@ function QueryPage() {
     }
 
     setLoading(true);
-    // Add user query to conversation
-    setConversation(prevMsgs => [
-      ...prevMsgs,
-      { type: 'user', content: query }
-    ]);
+    
+    // Add user query to conversation first and store the updated messages
+    const userMessage = { type: 'user', content: query };
+    const updatedMsgs = [...msgs, userMessage];
+    setConversation(updatedMsgs);
 
     try {
       console.log("Sending POST request to /query endpoint");
@@ -149,18 +159,17 @@ function QueryPage() {
         if (response.data.is_export) {
           // Handle export response
           console.log("Export request detected");
-          
-          // Build export data object
           const exportData = {
             results: response.data.results,
             columns: response.data.columns,
-            exportFormat: response.data.export_format || 'xlsx',
-            exportTemplateType: response.data.export_template || 'basic'
+            query: query,
+            queryType: response.data.query_type,
+            timestamp: new Date()
           };
           
-          // Add response to conversation
-          setConversation(prevMsgs => [
-            ...prevMsgs,
+          // Add response to conversation - use updatedMsgs which includes the user message
+          setConversation([
+            ...updatedMsgs,
             { 
               type: 'system', 
               content: 'I\'ll prepare your export with the requested data.', 
@@ -181,47 +190,37 @@ function QueryPage() {
           // Regular query response (not an export)
           console.log("Regular query response with results");
           
-          // First make a local copy of our msgs
-          const newMsgs = [...msgs];
-          
-          // Then add the system response
-          newMsgs.push({
+          // Add the system response to updatedMsgs which already has the user message
+          const systemResponse = {
               type: 'system', 
               content: '', // No explanation - just showing data
               queryType: response.data.query_type,
               queryCode: response.data.query_code,
               results: response.data.results,
               columns: response.data.columns
-          });
+          };
           
-          // Update state
-          setConversation(newMsgs);
+          // Update state with both user message and system response
+          setConversation([...updatedMsgs, systemResponse]);
         }
       } else {
         // Add error message to conversation
         console.error("Query failed:", response.data.error);
         
         const errorMsg = response.data.error || 'An error occurred processing your query.';
-        setConversation([...msgs, { type: 'error', content: errorMsg }]);
+        setConversation([...updatedMsgs, { type: 'error', content: errorMsg }]);
       }
     } catch (err) {
       // Add error message to conversation
       console.error("Query request error:", err);
+      let errMsg = 'Network error. Check your connection and try again.';
       
-      // Check if we got a response error message
-      let errMsg = '';
-      if (err.response && err.response.data && err.response.data.error) {
-        errMsg = err.response.data.error;
-      } else {
-        errMsg = 'An error occurred processing your query.';
+      if (err.response) {
+        errMsg = err.response.data.error || 'Server error. Please try again later.';
       }
       
-      setConversation(prevMsgs => [
-        ...prevMsgs,
-        { type: 'error', content: errMsg }
-      ]);
+      setConversation([...updatedMsgs, { type: 'error', content: errMsg }]);
     } finally {
-      // Make sure to reset loading state
       setLoading(false);
     }
   };
@@ -276,6 +275,8 @@ function QueryPage() {
         </Box>
       );
     }
+
+    console.log("Rendering messages:", msgs);
 
     return msgs.map((message, index) => {
       // This is the message from the user
@@ -538,7 +539,8 @@ function QueryPage() {
       {activeFile && (
         <>
           <Box 
-            m={2} 
+            m={2}
+            ref={chatContainerRef} 
             style={{ 
               maxHeight: '60vh',
               overflowY: 'auto',
@@ -546,7 +548,11 @@ function QueryPage() {
               border: '1px solid',
               borderColor: '#ccc',
               borderRadius: '8px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '8px'
             }}
+            id="chat-messages-container"
           >
             {renderChatMsgs()}
             <div ref={scrollRef} />
