@@ -14,17 +14,14 @@ function FileUpload({ onUploadSuccess }) {
   const fileInputRef = useRef(null); // Reference to the hidden file input
   
   // Todo: Add file validation for size - not working yet
-  
   useEffect(() => {
 
   }, []);
-
   const checkFile = (event) => {
     const file = event.target.files[0];
     if (!file) {
       return;
     }
-
     console.log("Got file:", file.name);
 
     // Check if file is okay
