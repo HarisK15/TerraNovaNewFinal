@@ -18,39 +18,61 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import * as XLSX from 'xlsx';
 import DataVisualization from './DataVisualization';
 import ExportTemplatesDialog from './ExportTemplatesDialog';
+// import ChartComponent from './ChartComponent'; // will add this later
 
-// This component shows the results of a query and allows exporting
-// It's a key part of my dissertation project for data exporting templates
-function QueryResults({ 
-  results, 
-  columns, 
-  queryType = 'sql', 
-  queryCode = '', 
-  exportIntent,
-  exportFormat, 
-  exportTemplateType
-}) {
-  // Store whether the export dialog is open or not
-  const [exportDialogOpen, setExportDialogOpen] = useState(false);
+// component for showing query results 
+// Todo: clean this up before submitting!
 
-  // Function to open the export dialog
-  const handleOpenExportDialog = () => {
-    console.log("Opening export dialog with format:", exportFormat);
-    console.log("Template type:", exportTemplateType);
-    console.log("Results count:", results ? results.length : 0);
-    console.log("Columns:", columns);
-    setExportDialogOpen(true);
-  };
+// supported formats
+var formats = ['json', 'csv', 'excel'];  // 'pdf' not working yet
 
-  // Function to close the export dialog
-  const handleCloseExportDialog = () => {
-    console.log("Closing export dialog");
-    setExportDialogOpen(false);
-  };
+//   function downloadStuff() {
+//     // Todo: implement 
+//   }
 
-  // Check if we have results
-  if (!results || results.length === 0) {
-    console.log("No results found for the query");
+function QueryResults(props) {
+  
+  // make first letter capital
+  var qt = props.queryType || 'sql';
+  if(qt != null && qt != undefined) {
+    if(qt.length > 0) {
+      var firstChar = qt.charAt(0);
+      var restChars = qt.slice(1);
+      qt = firstChar.toUpperCase() + restChars;
+    }
+  }
+  
+    // get results from props
+  var rs = props.results;
+      var cols = props.columns; 
+var qtype = props.queryType || 'sql';
+  var queryCode = props.queryCode || '';
+      var exportIntent = props.exportIntent;
+  var exportFormat = props.exportFormat;
+    var exportTemplateType = props.exportTemplateType;
+  
+  
+  // dialog variables
+  const [dialogOpen, setDialogOpen] = useState(false);
+  // might need later
+  var debug = false;
+  
+  var numCols = cols.length;
+          console.log("num cols:", numCols);
+  
+  // adding this for later
+  var showExtraInfo = true;
+  
+  // no results
+  var hasResults = false;
+  if (rs != null && rs != undefined) {
+    if (rs.length > 0) {
+      hasResults = true;
+    }
+  }
+  
+  if (hasResults == false) {
+      console.log("no results found");
     return (
       <Paper sx={{ p: 2, bgcolor: '#f8f9fa' }}>
         <Typography variant="body2" color="text.secondary">
@@ -58,230 +80,310 @@ function QueryResults({
         </Typography>
       </Paper>
     );
+  } else if (hasResults == true) {
+      console.log("results found");
   }
   
-  // Format the query type label (capitalize first letter)
-  let queryTypeLabel;
-  if (queryType) {
-    queryTypeLabel = queryType.charAt(0).toUpperCase() + queryType.slice(1);
-  } else {
-    queryTypeLabel = 'SQL';
+  // var showChart = true; 
+  /* 
+  function handlePageChange(page) {
+    setCurrentPage(page);
+    var start = (page - 1) * pageSize;
+    var end = page * pageSize;
+    setVisibleData(data.slice(start, end));
   }
-  console.log("Query type:", queryTypeLabel);
-
-  // Function to download the results as JSON
-  const downloadAsJson = () => {
-    console.log("Downloading results as JSON");
-    
-    // Convert the results to a JSON string
-    const dataStr = JSON.stringify(results, null, 2);
-    
-    // Create a blob with the data
-    const dataBlob = new Blob([dataStr], { type: 'application/json' });
-    
-    // Create a URL for the blob
-    const url = URL.createObjectURL(dataBlob);
-    
-    // Create a link element and click it to download
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = 'query_results.json';
-    link.click();
-    
-    // Clean up
-    URL.revokeObjectURL(url);
-    
-    console.log("JSON download complete");
-  };
-
-  // Function to download the results as CSV
-  const downloadAsCsv = () => {
-    console.log("Downloading results as CSV");
-    
-    // Create CSV header row
-    const csvHeader = columns.join(',') + '\n';
-    console.log("CSV header created");
-
-    // Create CSV rows by iterating through results
-    let csvRows = '';
-    for (let i = 0; i < results.length; i++) {
-      let row = results[i];
-      let rowValues = [];
-      
-      // Process each column in the row
-      for (let j = 0; j < columns.length; j++) {
-        let column = columns[j];
-        // Handle values that need quoting (contain commas, quotes, or newlines)
-        let value = row[column];
-        let valueStr = '';
-        
-        // Convert to string and handle null/undefined
-        if (value === null || value === undefined) {
-          valueStr = '';
-        } else {
-          valueStr = String(value);
+  */
+  
+// rendering data in table format
+  // function for render data in table
+function renderDataTable() {
+var tableData = [];
+    for (var i = 0; i < rs.length; i++) {
+var row = [];
+for (var j = 0; j < cols.length; j++) {
+var cell = rs[i][cols[j]];
+if (cell == null || cell == undefined) {
+          cell = '';
         }
-        
-        // Escape values with special characters
-        if (valueStr.includes(',') || valueStr.includes('"') || valueStr.includes('\n')) {
-          valueStr = '"' + valueStr.replace(/"/g, '""') + '"'; // Escape quotes with double quotes
-        }
-        
-        rowValues.push(valueStr);
+row.push(cell);
       }
-      
-      // Add the row to our CSV content
-      csvRows += rowValues.join(',') + '\n';
+tableData.push(row);
     }
-
-    // Combine header and rows
-    const csvContent = csvHeader + csvRows;
-    console.log("CSV content created, length:", csvContent.length);
-    
-    // Create a blob and download link
-    const dataBlob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(dataBlob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = 'query_results.csv';
-    link.click();
-    URL.revokeObjectURL(url);
-    
-    console.log("CSV download complete");
-  };
-
-  // Function to download the results as Excel
-  const downloadAsExcel = () => {
-    console.log("Downloading results as Excel");
-    
-    try {
-      // Convert results to worksheet format
-      const worksheet = XLSX.utils.json_to_sheet(results);
-      console.log("Worksheet created");
-      
-      // Create workbook and add the worksheet
-      const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, 'Query Results');
-      console.log("Workbook created with sheet added");
-      
-      // Generate Excel file and trigger download
-      XLSX.writeFile(workbook, 'query_results.xlsx');
-      console.log("Excel file downloaded");
-    } catch (error) {
-      console.error("Error creating Excel file:", error);
-      alert("Failed to create Excel file: " + error.message);
-    }
-  };
-
-  // TODO: Add function to export multiple sheets in one Excel file
-  // TODO: Add function to customize column headers before export
-
-  return (
-    <Box>
-      <Box sx={{ mb: 2, display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
-        {/* Export Templates button */}
-        <Tooltip title="Export with Templates">
-          <Button
-            size="small"
-            startIcon={<SettingsIcon />}
-            onClick={handleOpenExportDialog}
-            variant="contained"
-            color="primary"
-          >
-            Export Templates
-          </Button>
-        </Tooltip>
-        
-        {/* CSV export button */}
-        <Tooltip title="Download as CSV">
-          <Button
-            size="small"
-            startIcon={<DownloadIcon />}
-            onClick={downloadAsCsv}
-            variant="outlined"
-          >
-            CSV
-          </Button>
-        </Tooltip>
-        
-        {/* Excel export button */}
-        <Tooltip title="Download as Excel">
-          <Button
-            size="small"
-            startIcon={<DownloadIcon />}
-            onClick={downloadAsExcel}
-            variant="outlined"
-            color="success"
-          >
-            Excel
-          </Button>
-        </Tooltip>
-        
-        {/* JSON export button */}
-        <Tooltip title="Download as JSON">
-          <Button
-            size="small"
-            startIcon={<DownloadIcon />}
-            onClick={downloadAsJson}
-            variant="outlined"
-          >
-            JSON
-          </Button>
-        </Tooltip>
-      </Box>
-      
-      {/* Table to display the results */}
-      <TableContainer component={Paper} sx={{ maxHeight: 400, overflow: 'auto' }}>
-        <Table size="small" stickyHeader>
-          {/* Table header with column names */}
-          <TableHead>
-            <TableRow>
-              {columns.map((column, index) => (
-                <TableCell key={column + '-' + index} sx={{ fontWeight: 'bold', bgcolor: '#f0f0f0' }}>
-                  {column}
+return (
+  <div>
+      <TableContainer 
+        component={Paper} 
+        sx={{ maxHeight: 400, 
+        overflow: 'auto', 
+        marginBottom: "10px" 
+      }}>
+        <Table 
+          style={{width: "100%"}} 
+          size="small">
+              <TableHead style={{position: "sticky", top: 0, background: "#fff"}}>
+                <TableRow>
+          {cols.map((c, i) => 
+                <TableCell key={i}>
+                  <b>{c}</b>
                 </TableCell>
-              ))}
+              )}
             </TableRow>
           </TableHead>
-          
-          {/* Table body with data */}
           <TableBody>
-            {results.map((row, rowIndex) => (
-              <TableRow key={'row-' + rowIndex} hover>
-                {columns.map((column, colIndex) => (
-                  <TableCell key={`${rowIndex}-${column}-${colIndex}`}>
-                    {row[column] !== null && row[column] !== undefined ? String(row[column]) : ''}
-                  </TableCell>
-                ))}
-              </TableRow>
-            ))}
+            {tableData.map(function(r, i) {
+              // style
+              var rowStyle = {};
+          
+              /*
+              if (i % 2 === 0) {
+                rowStyle = { backgroundColor: '#f9f9f9' };
+              }
+              */
+
+              return (
+                <TableRow key={i} style={rowStyle}>
+                  {r.map(function(c, j) {
+                     // return a cell
+                    return (
+                      <TableCell 
+                        key={j}
+                      >
+                        {c}
+                      </TableCell>
+                    );
+                  })}
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
       </TableContainer>
+      <div style={{
+          height: "10px",
+          width: "100%"
+      }}></div>
+    </div>
+    );
+  }
+
+function renderQueryInfo() {
+    var queryInfo = '';
+    if (qt != null && qt != undefined) {
+      queryInfo += qt + ' Query Results: ';
+    }
+if (rs != null && rs != undefined) {
+      queryInfo += rs.length + ' rows found';
+    }
+    
+// paper component with info
+    var comp = <Paper sx={{ p: 2, mb: 3, bgcolor: '#f5f5f5' }}>
+    <Typography 
+        variant="subtitle2" 
+        gutterBottom
+    >
+      {queryInfo}
+    </Typography>
+    
+    {queryCode != null 
+    && queryCode != undefined 
+    && queryCode != "" ? 
+    <Typography 
+          variant="caption" 
+          component="pre" 
+          sx={{ 
+          mt: 1, 
+      p: 1.5, 
+        bgcolor: '#f0f0f0', 
+          borderRadius: 1,
+      overflowX: 'auto',
+          border: '1px solid #e0e0e0'
+    }}
+    >
+        {queryCode}
+      </Typography> : null}
+  </Paper>;
+    
+    return comp;
+  }
+
+  return (
+    <Box>
+      <div className="visualization">
+      <DataVisualization 
+        results={rs} 
+        columns={cols} 
+      />
+      </div>
       
-      {/* Display record count */}
-      {results.length > 0 && (
-        <Typography variant="caption" sx={{ mt: 1, display: 'block', color: 'text.secondary' }}>
-          {results.length} record{results.length !== 1 ? 's' : ''} found
-        </Typography>
-      )}
+      {/* sometimes we need queryinfo */}
+      <div>
+        {renderQueryInfo()}
+      </div>
+
+      {/* export buttons  */}
+      <Box sx={{
+         mb: 2, 
+         display: 'flex', 
+         justifyContent: 'flex-end', 
+         gap: 1 
+      }}>
       
-      {/* Data Visualization Component - for charts and graphs */}
-      <DataVisualization results={results} columns={columns} />
+        <Button
+          size="small"
+          startIcon={<SettingsIcon />}
+          onClick={() => {
+            console.log("Opening dialog");
+            console.log("Results count:", rs ? rs.length : 0);
+            // add more options 
+            setDialogOpen(true);
+          }}
+          variant="contained"
+color="primary"
+        >
+          Export Templates
+        </Button>
+        
+
+        
+
+
+        <Button
+          size="small"
+        startIcon={<DownloadIcon />}
+          onClick={() => {
+            console.log("Downloading as CSV");
+            
+            // create header row
+            var str = "";
+            for(var i = 0; i < cols.length; i++){
+              str += cols[i];
+              if(i < cols.length - 1) {
+                str += ',';
+              }
+            }
+            str += '\n';
+            console.log("header done");
+            
+            // rows
+            for(var j = 0; j < rs.length; j++) {
+                var rowData = rs[j];
+              var rowStr = "";
+              
+              for(var k = 0; k < cols.length; k++) {
+                var colName = cols[k];
+                var val = rowData[colName];
+                
+                // check if value is null
+                if (val == null || val == undefined) {
+                  val = '';
+                } else {
+                  val = String(val);
+                }
+                
+                // handle commas
+                if(val.indexOf(',') > -1) {
+                  val = '"' + val + '"';
+                }
+                
+                rowStr += val;
+                if(k < cols.length - 1) {
+                  rowStr += ',';
+                }
+              }
+              
+              str += rowStr + '\n';
+            }
+            
+            var b = new Blob([str], {type: "text/csv"});
+            var url = URL.createObjectURL(b);
+            var a = document.createElement('a');
+            a.href = url;
+            a.download = 'results.csv';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+
+            // URL.revokeObjectURL(url); 
+          }}
+          variant="outlined"
+        >
+          CSV
+        </Button>
+        
+        
+        <Button
+        size="small"
+          startIcon={<DownloadIcon />}
+          onClick={() => {
+              // this is for excel
+            var ws = XLSX.utils.json_to_sheet(rs);
+            var wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Data");
+            XLSX.writeFile(wb, 'results.xlsx');
+          }}
+        variant="outlined"
+        >
+          Excel
+        </Button>
+        
+        
+        <Button
+          size="small"
+        startIcon={<DownloadIcon />}
+          onClick={() => {
+            // convert to json and download
+            var j = JSON.stringify(rs, null, 2);
+            var b = new Blob([j], {type: "application/json"});
+            var l = document.createElement('a');
+            l.href = URL.createObjectURL(b);
+            l.download = 'results.json';
+            l.click();
+          }}
+variant="outlined"
+        >
+          JSON
+        </Button>
+      </Box>
       
-      {/* Export Templates Dialog - This is a separate component for exporting with templates */}
-      {exportDialogOpen && (
-        <ExportTemplatesDialog 
-          open={exportDialogOpen} 
-          handleClose={handleCloseExportDialog} 
-          results={results} 
-          columns={columns}
-          exportFormat={exportFormat}
-          exportTemplateType={exportTemplateType}
-        />
-      )}
+      <div id="results-table-container" className="results">
+        {renderDataTable()}
+      </div>
+      
+
+      <ExportTemplatesDialog
+        open={dialogOpen}
+        onClose={
+          () => {
+            setDialogOpen(false)
+          }
+        }
+        results={rs}
+        columns={cols}
+        exportIntent={exportIntent}
+        exportFormat={exportFormat} 
+        exportTemplateType={exportTemplateType}
+      />
     </Box>
   );
 }
+
+      {/*
+      <div className="charts">
+        {showCharts && (
+          <div>
+            <h3>Visualizations</h3>
+            <BarChart data={rs} />  
+          </div>
+        )}
+      </div>
+      */}
+
+
+// todo add sort
+// todo add filtering
+// todo fix bug with commas in csv
+// todo implement pdf export
+
+
 
 export default QueryResults;

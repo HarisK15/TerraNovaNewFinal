@@ -7,28 +7,43 @@ import ChatIcon from '@mui/icons-material/Chat';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import PsychologyIcon from '@mui/icons-material/Psychology';
 
-// This is the homepage of my dissertation project
-// It shows an overview of what the app does and lets users navigate to the query page
+// my dissertation homepage
+// TODO: maybe add dark mode?? need to check how to do this
+
 function Home() {
-  const navigate = useNavigate();
+  var nav = useNavigate();
   const theme = useTheme();
   
-  // Log when the home page loads
+    // some colors I might use later
+  const btn_color = 'primary'
+  
+  // this is for testing
+var isDebug = false;
+
+
+  // log stuff when page loads
   useEffect(() => {
-    console.log("Home page loaded");
-    // TODO: Add analytics tracking later
-    // TODO: Maybe add some animations to make it look nicer
+    console.log("Home page loaded")
+    // stuff to add later
+    // TODO analytics here??
+    
+    var page_title = document.title
+    console.log('current page: ' + page_title)
+    
+    //TODO fix this part
+
   }, []);
 
-  // Function to handle navigation to the query page
-  const handleNavigateToQuery = () => {
-    console.log("Navigating to query page...");
-    navigate('/query');
+  // go to query page
+  function navQuery() {
+    console.log("going to query page...")
+    nav('/query');
   }
   
+
   return (
     <Box sx={{ py: 3 }}>
-      {/* Main headline section */}
+      {/* top part */}
       <Box 
         sx={{ 
           textAlign: 'center', 
@@ -37,7 +52,8 @@ function Home() {
           mx: 'auto'
         }}
       >
-        {/* Label chip */}
+
+        {/* chip with label */}
         <Chip 
           label="AI-Powered SQL Generation" 
           size="small" 
@@ -51,14 +67,15 @@ function Home() {
           }} 
         />
         
-        {/* Main heading with gradient text */}
+        
+        {/* title */}
         <Typography 
           variant="h3" 
           component="h1" 
           sx={{ 
             fontWeight: 700,
             mb: 2,
-            // I learned how to do gradient text from a tutorial
+            // gradient text from stackoverflwo
             background: `linear-gradient(120deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.light} 50%, ${theme.palette.secondary.light} 100%)`,
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
@@ -69,7 +86,7 @@ function Home() {
           Query Your Data with Natural Language
         </Typography>
         
-        {/* Subtitle */}
+        {/* subtitle description */}
         <Typography 
           variant="h6" 
           color="text.secondary"
@@ -78,24 +95,28 @@ function Home() {
           TerraNova helps you analyze and export data through natural language queries without needing to know SQL.
         </Typography>
         
-        {/* CTA Button */}
+
+        {/* button */}
         <Button 
           variant="contained" 
           size="large"
           endIcon={<ArrowForwardIcon />}
-          onClick={handleNavigateToQuery}
+          onClick={navQuery}
           sx={{ px: 4, py: 1.5 }}
         >
           Try It Now
         </Button>
       </Box>
 
-      {/* Feature cards */}
+
+
+      {/* cards */}
       <Grid container spacing={4} sx={{ mb: 6 }}>
-        {/* Feature 1 - Natural Language to SQL */}
+        
+        {/* card 1 */}
         <Grid item xs={12} md={4}>
           <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-            <CardContent sx={{ flexGrow: 1, p: 4 }}>
+            <CardContent sx={{ flexGrow: 1 }}>
               <Box
                 sx={{
                   width: 48,
@@ -121,10 +142,12 @@ function Home() {
           </Card>
         </Grid>
         
-        {/* Feature 2 - Pre-built Exports */}
+        
+        
+        {/* card 2 */}
         <Grid item xs={12} md={4}>
           <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-            <CardContent sx={{ flexGrow: 1, p: 4 }}>
+            <CardContent sx={{ p: 3, flexGrow: 1 }}>
               <Box
                 sx={{
                   width: 48,
@@ -150,7 +173,9 @@ function Home() {
           </Card>
         </Grid>
         
-        {/* Feature 3 - AI Analysis */}
+        
+        
+        {/* card 3 - data insights */}
         <Grid item xs={12} md={4}>
           <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
             <CardContent sx={{ flexGrow: 1, p: 4 }}>
@@ -175,14 +200,17 @@ function Home() {
               <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
                 Get automatic visualizations and statistical analysis of your query results.
               </Typography>
+              
+              {/* TODO add more features here */}
             </CardContent>
           </Card>
         </Grid>
       </Grid>
 
-      {/* Upload section */}
+      
+      {/* upload area */}
       <Box sx={{ 
-        p: 4, 
+        p: 3, 
         borderRadius: 4, 
         bgcolor: '#F9FAFB',
         border: '1px dashed',
@@ -197,17 +225,15 @@ function Home() {
           Upload your CSV files to start querying. We support most standard CSV formats.
         </Typography>
         
-        {/* File upload component */}
+        {/* upload component */}
         <FileUpload />
-        
-        {/* Help message for data */}
-        <Typography variant="body2" color="text.secondary" sx={{ mt: 3 }}>
-          Don't have data? No problem - we have sample datasets you can use.
-        </Typography>
       </Box>
     </Box>
   );
 }
 
-// Export the component so we can use it in App.js
+// TODO fix margin on mobile
+// TODO add footer?
+
+
 export default Home;

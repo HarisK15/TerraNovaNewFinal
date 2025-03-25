@@ -18,6 +18,7 @@ function QueryInput({ onSubmit, disabled, loading }) {
   }, []);
   
   
+  
   const submitQuery = (e) => {
     e.preventDefault();
     
