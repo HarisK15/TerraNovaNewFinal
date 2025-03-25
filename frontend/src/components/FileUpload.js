@@ -4,8 +4,6 @@ import UploadFileIcon from '@mui/icons-material/UploadFile';
 import axios from 'axios';
 
 // This component handles file uploading functionality
-// It allows users to upload a CSV or SQLite database file
-// And reports on the upload progress and status
 function FileUpload({ onUploadSuccess }) {
   // State variables to track the file and upload status
   const [selectedFile, setSelectedFile] = useState(null);
@@ -15,156 +13,90 @@ function FileUpload({ onUploadSuccess }) {
   const [success, setSuccess] = useState(null);
   const fileInputRef = useRef(null); // Reference to the hidden file input
   
-  // Log when component mounts
+  // Todo: Add file validation for size - not working yet
+  
   useEffect(() => {
-    console.log("FileUpload component mounted");
-    
-    // This is called when the component unmounts
-    return () => {
-      console.log("FileUpload component unmounting");
-      
-      // Clean up any files that might be in memory
-      if (selectedFile) {
-        console.log("Cleaning up selected file:", selectedFile.name);
-      }
-    };
-  }, [selectedFile]);
 
-  // This function is triggered when a file is selected
-  const handleFileChange = (event) => {
-    console.log("File selection changed");
+  }, []);
+
+  const checkFile = (event) => {
     const file = event.target.files[0];
     if (!file) {
-      console.log("No file selected");
       return;
     }
 
-    console.log("File selected:", file.name, "Size:", file.size, "Type:", file.type);
+    console.log("Got file:", file.name);
 
-    // Check if the file is the right type
-    // We only want .db (SQLite) or .csv files
-    const fileExtension = file.name.split('.').pop().toLowerCase();
-    console.log("File extension:", fileExtension);
-    
-    if (fileExtension !== 'db' && fileExtension !== 'csv') {
-      console.error("Invalid file type:", fileExtension);
+    // Check if file is okay
+    if (!file.name.endsWith('.db') && !file.name.endsWith('.csv')) {
+      console.error("Invalid file type");
       setError('Only SQLite database (.db) or CSV (.csv) files are allowed');
       setSelectedFile(null);
-      event.target.value = null; // Reset file input
       return;
     }
-
     setSelectedFile(file);
     setError(null);
-    setSuccess(null);
-    console.log("File validated and set to state");
   };
-
-  // Function to format file size in a human-readable way
-  // Takes bytes and converts to KB, MB etc.
-  const formatFileSize = (bytes) => {
-    console.log("Formatting file size from bytes:", bytes);
-    
-    if (bytes < 1024) {
-      return bytes + ' bytes';
-    } else if (bytes < 1048576) {
-      // Convert to KB (1024 bytes = 1 KB)
-      return (bytes / 1024).toFixed(2) + ' KB';
-    } else {
-      // Convert to MB (1048576 bytes = 1 MB)
-      return (bytes / 1048576).toFixed(2) + ' MB';
-    }
-  };
-
-  // This function handles the file upload process
-  const handleUpload = async () => {
-    console.log("Upload button clicked");
-    
-    // First check if a file is selected
+  const sendFile = async () => {
+    console.log("uploading...");
     if (!selectedFile) {
-      console.error("No file selected for upload");
       setError('Please select a file first');
       return;
     }
-
-    // Create form data to send the file
+    // Todo: Add file size check (max 10MB)
     const formData = new FormData();
     formData.append('file', selectedFile);
-    console.log("Form data created with file:", selectedFile.name);
 
-    // Update state to show upload in progress
+
     setIsUploading(true);
     setUploadProgress(0);
-    setError(null);
-    setSuccess(null);
-    console.log("Starting upload process");
 
     try {
-      console.log("Sending POST request to /upload endpoint");
-      // Upload the file to the server
       const response = await axios.post('/upload', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
-        // Track upload progress
         onUploadProgress: (progressEvent) => {
           const percentCompleted = Math.round(
             (progressEvent.loaded * 100) / progressEvent.total
           );
-          console.log("Upload progress:", percentCompleted + "%");
           setUploadProgress(percentCompleted);
         },
       });
-
-      console.log("Upload response received:", response.data);
       
-      // Handle successful upload
       if (response.data.success) {
-        console.log("File successfully uploaded:", response.data.filename);
+        console.log("ok", response.data.filename);
         setSuccess(`File successfully uploaded: ${response.data.filename}`);
         setSelectedFile(null);
-        if (fileInputRef.current) fileInputRef.current.value = null;
-
-        // Set the uploaded file as the active file
+        // Not sure if this is the best way to set active file
         try {
-          console.log("Setting uploaded file as active");
           await axios.post('/set-active-file', {
-            filePath: response.data.path // Use the full path returned from the API
+            filePath: response.data.path
           });
-          
-          console.log("File set as active successfully");
-          
-          // Notify parent component about the successful upload
           if (onUploadSuccess) {
-            console.log("Calling onUploadSuccess callback");
             onUploadSuccess({
               filename: response.data.filename,
               schema: response.data.schema
             });
           }
         } catch (err) {
-          console.error("Error setting file as active:", err);
-          setError('File uploaded but could not be set as active file');
+          console.log("Error setting file as active:", err);
         }
       } else {
-        console.error("Upload failed:", response.data.error);
-        setError(response.data.error || 'Failed to upload file');
+        console.log("Upload failed with error:", response.data.error);
+        setError('Upload failed');
       }
     } catch (err) {
-      console.error("Upload error:", err);
-      setError(err.response?.data?.error || 'Error uploading file. Please try again.');
+      console.log("Error during upload:", err);
+      setError('Error uploading file');
     } finally {
-      console.log("Upload process completed");
       setIsUploading(false);
     }
   };
-
-  // This function simulates clicking the hidden file input
-  const triggerFileInput = () => {
-    console.log("Triggering file input click");
+  // works?
+  const openFilePicker = () => {
     fileInputRef.current?.click();
   };
-
   return (
     <Box>
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -181,13 +113,13 @@ function FileUpload({ onUploadSuccess }) {
               backgroundColor: '#f0f0f0',
             },
           }}
-          onClick={triggerFileInput}
-        >
+          onClick={openFilePicker}>
+        
           {/* Hidden file input element */}
           <input
             type="file"
             accept=".db,.csv"
-            onChange={handleFileChange}
+            onChange={checkFile}
             style={{ display: 'none' }}
             ref={fileInputRef}
           />
@@ -200,7 +132,6 @@ function FileUpload({ onUploadSuccess }) {
             Maximum file size: 10MB
           </Typography>
         </Box>
-
         {/* Selected file information and upload button */}
         {selectedFile && (
           <Paper variant="outlined" sx={{ p: 2, bgcolor: '#f5f5f5' }}>
@@ -208,18 +139,21 @@ function FileUpload({ onUploadSuccess }) {
               Selected File:
             </Typography>
             <Typography variant="body2">
-              {selectedFile.name} ({formatFileSize(selectedFile.size)})
+              {selectedFile.name} ({selectedFile.size < 1024 ? 
+                selectedFile.size + ' bytes' : 
+                selectedFile.size < 1048576 ? 
+                  (selectedFile.size / 1024).toFixed(2) + ' KB' : 
+                  (selectedFile.size / 1048576).toFixed(2) + ' MB'})
             </Typography>
 
             {/* Upload button */}
             <Button
               variant="contained"
               color="primary"
-              onClick={handleUpload}
+              onClick={sendFile}
               disabled={isUploading}
               sx={{ mt: 2 }}
-              fullWidth
-            >
+              fullWidth>
               {isUploading ? 'Uploading...' : 'Upload File'}
             </Button>
 
@@ -239,10 +173,7 @@ function FileUpload({ onUploadSuccess }) {
         {error && (
           <Alert 
             severity="error" 
-            onClose={() => {
-              console.log("Closing error alert");
-              setError(null);
-            }}
+            onClose={() => setError(null)}
           >
             {error}
           </Alert>
@@ -252,10 +183,7 @@ function FileUpload({ onUploadSuccess }) {
         {success && (
           <Alert 
             severity="success" 
-            onClose={() => {
-              console.log("Closing success alert");
-              setSuccess(null);
-            }}
+            onClose={() => setSuccess(null)}
           >
             {success}
           </Alert>
@@ -264,6 +192,6 @@ function FileUpload({ onUploadSuccess }) {
     </Box>
   );
 }
-
-// Export the component so it can be imported in other files
 export default FileUpload;
+
+// Todo: Maybe add drag and drop support
