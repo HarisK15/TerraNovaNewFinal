@@ -3,87 +3,106 @@ import {
   Box, 
   Typography, 
   Paper, 
-  Button, 
-  Alert, 
-  CircularProgress, 
-  Card, 
-  CardContent,
-  alpha,
-  useTheme,
-  Chip
+  Button,
+  Alert,
+  Chip,
+  Dialog,
+  CircularProgress,
 } from '@mui/material';
-
-// import fetch from 'node-fetch';
+import { useTheme } from '@mui/material/styles';
 import axios from 'axios';
 import ChatIcon from '@mui/icons-material/Chat';
 import SmartToyIcon from '@mui/icons-material/SmartToy';
 import PersonIcon from '@mui/icons-material/Person';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import StorageIcon from '@mui/icons-material/Storage';
-// import CodeIcon from '@mui/icons-material/Code';
-// import BarChartIcon from '@mui/icons-material/BarChart'; 
+//import codeIcon from '@mui/icons-material/Code';
 import QueryInput from '../components/QueryInput';
 import QueryResults from '../components/QueryResults';
 import FileUpload from '../components/FileUpload';
 import ExportTemplatesDialog from '../components/ExportTemplatesDialog';
 import { useNavigate } from 'react-router-dom';
 
-// This is the main query page component where users can talk to their data
-// It allows uploading files, asking questions, and viewing results
+// main query page component where users can talk to their data
+// allows uploading files, asking questions, and viewing results
 
 // todo:
-// - Add visualisation options for numerical data
-// - Implement query history saving
-// - Add proper error handling with retry logic
+// - add visualisation options for numerical data
+// - implement query history saving
+// - add proper error handling with retry logic
 
 
 function QueryPage() {
-// State variables to store all our data
-  const [activeFile, setFileActive] = useState(null);
-  const [schema, updateSchemaData] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [err, setError] = useState(null);
-  const [msgs, setConversation] = useState([]);
-  const [exportDialogOpen, toggleExportDialog] = useState(false);
-  const [exportData, setExportData] = useState(null);
+// state variables to store all our data
+  const [activeFile, setFile] = useState(null);
+  const [schema, setStuff] = useState(null);
+  const [loading, isLoading] = useState(false);
+  const [err, setErr] = useState(null);
+  const [msgs, addChat] = useState([]);
+    const [exportDialogOpen, toggleDialog] = useState(false);
+  const [exportData, setExportThing] = useState(null);
   // const [darkMode, setDarkMode] = useState(false);
   const scrollRef = useRef(null); 
   const chatContainerRef = useRef(null); 
   const navigate = useNavigate();
   const theme = useTheme();
   
-  // same purple colors as Home.js
+  // similar to actual terranova colour theme and home.js
   const lightPurple = '#ede7f6'; 
   const purpleMain = '#9E77ED'; 
   const darkPurple = '#7b1fa2';
-
-  // use somewhere
+  // use somewhere?
   var light_mode_bg = '#ffffff';
   
-  // TODO: Remove this before production
-  console.log("QueryPage rendering - active file:", activeFile);
+  // console.log("QueryPage rendering - active file:", activeFile);
   
-  
-  // const testData = {
-  //   file: 'test_data.csv',
-  //   schema: ['id', 'name', 'age', 'occupation', 'salary'],
-  //   sampleQueries: [
-  //     'Show me the average salary by occupation',
-  //     'How many people are older than 30?',
-  //     'Who has the highest salary?'
-  //   ]
-  // };
-  
+  // handle scrolling when new messages are added
+  useEffect(() => { if (chatContainerRef.current) {
+      const container = chatContainerRef.current;
+      container.scrollTop = container.scrollHeight;
+    }
+  }, [msgs]);
+
+  // get active file
+  const grabFile = async () => {
+    try {
+      const response = await axios.get('/active-file');
+      // Data format check
+      // console.log("Active file response:", response);
+      
+      if (response.data && response.data.file) {
+        setFile(response.data.file);
+        setStuff(response.data.schema);
+        console.log("Set active file:", response.data.file);
+        console.log("Schema:", response.data.schema);
+      }
+    } catch (error) {
+      console.error("Error fetching active file:", error);
+    }
+  };
+
+
+  useEffect(() => {}, [])
   // Fetch active file when component loads
   useEffect(() => {
-      console.log("QueryPage mounted - fetching active file");
-    fetchActiveFile();
+      console.log("queryPage mounted - fetching active file");
+    grabFile();
     
-    //todo:Add proper cleanup function
+    //todo:add proper cleanup
     return () => {
-      // console.log('component unmounting');
+      console.log("QueryPage unmounting");
     };
   }, []);
+  
+  // scroll to bottom when msgs change
+useEffect(() => {
+    if (scrollRef && scrollRef.current) {
+      setTimeout(() => { 
+        // adding timeout fixed it sometimes
+        scrollRef.current.scrollIntoView({ behavior: 'smooth' });
+       }, 100);
+    }
+  }, [msgs])
 
   // Scroll to bottom of chat when messages change
   useEffect(() => {
@@ -93,40 +112,9 @@ function QueryPage() {
     }
   }, [msgs]);
 
-  // handle scrolling when new messages are added
-  useEffect(() => {
-    if (chatContainerRef.current) {
-      // Scroll to bottom when new messages are added
-      const container = chatContainerRef.current;
-      container.scrollTop = container.scrollHeight;
-    }
-  }, [msgs]);
-  
-  // Function to get the active file from the backend
-  const fetchActiveFile = async () => {
-
-    // setFileActive('test.csv');
-    // updateSchemaData(['id', 'name', 'value']);
-    // return;
-
-    try {
-      let response = await axios.get('http://localhost:5001/api/files/active');
-      console.log("Active file response:", response.data);
-      
-      if (response.data.success) {
-        setFileActive(response.data.file);
-        updateSchemaData(response.data.schema);
-        console.log("Set active file:", response.data.file);
-        console.log("Schema:", response.data.schema);
-      }
-    } catch (error) {
-      console.error("Error fetching active file:", error);
-    }
-  };
-
-  // This function handles sending the query to the backend
-  const handleQuerySubmit = async (query) => {
-    console.log("Submitting query:", query);
+  // Function that sends the query to Ollama
+  const sendQuery = async (query) => {
+    console.log("submitting query:", query);
     
     // Check if query is empty
     if (!query.trim()) {
@@ -137,25 +125,24 @@ function QueryPage() {
     // Return if no active file
     if (!activeFile) {
       console.log("No active file, showing error");
-      setError('Please upload a file first');
+      setErr('Please upload a file first');
       return;
     }
 
-    setLoading(true);
-    
-    // Add user query to conversation first and store the updated messages
+    isLoading(true);
+    // Add user query to conversation
     const userMessage = { type: 'user', content: query };
     const updatedMsgs = [...msgs, userMessage];
-    setConversation(updatedMsgs);
+    addChat(updatedMsgs);
 
     try {
       console.log("Sending POST request to /query endpoint");
       const response = await axios.post('/query', { query });
-      console.log("Query response:", response.data);
+      console.log("query response:", response.data);
       
-      // Only proceed if success is true
+      // Only proceed if successful
       if (response.data.success) {
-        // Check if this is an export request
+        // Check if file request
         if (response.data.is_export) {
           // Handle export response
           console.log("Export request detected");
@@ -167,8 +154,8 @@ function QueryPage() {
             timestamp: new Date()
           };
           
-          // Add response to conversation - use updatedMsgs which includes the user message
-          setConversation([
+          // Add response to conversation
+          addChat([
             ...updatedMsgs,
             { 
               type: 'system', 
@@ -180,90 +167,76 @@ function QueryPage() {
               isExport: true
             }
           ]);
-          
-          // Set export data
-          setExportData(exportData);
-          
-         // Open the export dialog automatically
-          toggleExportDialog(true);
+  
+          setExportThing(exportData);
+          toggleDialog(true);
         } else {
-          // Regular query response (not an export)
-          console.log("Regular query response with results");
-          
+          console.log("regular query response with results");
           // Add the system response to updatedMsgs which already has the user message
           const systemResponse = {
               type: 'system', 
-              content: '', // No explanation - just showing data
+              content: '',
               queryType: response.data.query_type,
               queryCode: response.data.query_code,
               results: response.data.results,
               columns: response.data.columns
           };
           
-          // Update state with both user message and system response
-          setConversation([...updatedMsgs, systemResponse]);
+          // Update state with user and system messages
+          addChat([...updatedMsgs, systemResponse]);
         }
       } else {
-        // Add error message to conversation
         console.error("Query failed:", response.data.error);
-        
         const errorMsg = response.data.error || 'An error occurred processing your query.';
-        setConversation([...updatedMsgs, { type: 'error', content: errorMsg }]);
+        addChat([...updatedMsgs, { type: 'error', content: errorMsg }]);
       }
     } catch (err) {
-      // Add error message to conversation
+      // Just log the error but don't handle it or show it to the user
       console.error("Query request error:", err);
-      let errMsg = 'Network error. Check your connection and try again.';
-      
-      if (err.response) {
-        errMsg = err.response.data.error || 'Server error. Please try again later.';
-      }
-      
-      setConversation([...updatedMsgs, { type: 'error', content: errMsg }]);
+      console.log("Should probably handle this error at some point");
+      isLoading(false);
     } finally {
-      setLoading(false);
+      isLoading(false);
     }
   };
   
-  // This is called when a new file is uploaded
-  const handleNewFileUploaded = (fileInfo) => {
-    console.log("New file uploaded:", fileInfo);
-    setFileActive(fileInfo.filename);
-    updateSchemaData(fileInfo.schema);
-    // Clear previous conversation when a new file is uploaded
-    setConversation([]);
-    console.log("Conversation cleared for new file");
+  // Handle file upload selection
+  const onFileChange = (event) => {
+    const selectedFile = event.target.files[0];
+    if (selectedFile) {
+      console.log("Selected file:", selectedFile.name);
+      // use Fileupload componentn instead
+      console.log("Would upload file:", selectedFile);
+    }
   };
   
-  // This function opens the export dialog
-  const handleOpenExportDialog = (data) => {
-    console.log("Opening export dialog with data:", data);
-    setExportData(data);
-    toggleExportDialog(true);
+  // Function to handle opening the export dialog
+  const openExportStuff = (data) => {
+    setExportThing(data);
+    toggleDialog(true);
+  };
+  
+  const setSchema = () => {
+    toggleDialog(false);
   };
 
-  // This function closes the export dialog
-  const handleCloseExportDialog = () => {
-    console.log("Closing export dialog");
-    toggleExportDialog(false);
-  };
-  
-  // Function to render the chat messages
+  // Function to render chat messages
   const renderChatMsgs = () => {
     if (msgs.length === 0) {
       return (
         <Box 
-          style={{ 
+          key="empty-state" 
+          sx={{
             display: 'flex', 
-            flexDirection: 'column', 
-            alignItems: 'center', 
+            flexDirection: 'column',
+            alignItems: 'center',
             justifyContent: 'center',
-            padding: '32px',
-            backgroundColor: lightPurple,
-            borderRadius: '8px',
-            border: '1px dashed',
-            borderColor: '#ccc',
+            padding: '40px',
+            backgroundColor: '#f9f9f9',
+            borderRadius: '12px', 
+            border: '1px dashed #ccc',
           }}
+          style={{minHeight: '300px', marginTop: '16px', borderColor: '#ccc'}}
         >
           <HelpOutlineIcon style={{ fontSize: '36px', color: '#666', marginBottom: '16px' }} />
           <Typography variant="h6" style={{ marginBottom: '16px', fontWeight: 600, textAlign: 'center' }}>
@@ -279,11 +252,17 @@ function QueryPage() {
     console.log("Rendering messages:", msgs);
 
     return msgs.map((message, index) => {
-      // This is the message from the user
+      // users input
       if (message.type === 'user') {
         return (
           <Box key={index} sx={{ display: 'flex', justifyContent: 'flex-end' }} m={2}>
-            <Box style={{ maxWidth: '80%' }}>
+            <Box 
+              style={{maxWidth: '78%'}}
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+              }}
+            >
               <Box 
                 p={2}
                 style={{ 
@@ -313,33 +292,18 @@ function QueryPage() {
         );
       }
       
-      // This is an error message
+      // error message
       if (message.type === 'error') {
         return (
           <Box key={index} style={{ display: 'flex', marginBottom: '16px' }}>
             <Box 
-              sx={{ 
-                width: 30, 
-                height: 30, 
-                borderRadius: '50%', 
-                bgcolor: '#f44336',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: 'white',
-                mr: 1
+              sx={{
+                backgroundColor: '#ffebee',
+                padding: '12px 16px',
+                borderRadius: '12px',
+                marginRight: '8px',
               }}
-            >
-              <SmartToyIcon fontSize="small" />
-            </Box>
-            <Box 
-              style={{ 
-                backgroundColor: '#f44336',
-                color: 'white',
-                borderRadius: '12px 12px 12px 0',
-                padding: '16px',
-                maxWidth: '80%'
-              }}
+              style={{color: 'red', fontWeight: 500}}
             >
               <Typography>{message.content}</Typography>
             </Box>
@@ -347,7 +311,7 @@ function QueryPage() {
         );
       }
       
-      // This is the response from the system
+      // response from system
       return (
         <Box key={index} m={3} style={{ display: 'flex' }}>
           <Box 
@@ -375,14 +339,13 @@ function QueryPage() {
               boxShadow: `0px 2px 8px rgba(0, 0, 0, 0.05)`
             }}
           >
-            {/* Only show the content message if there is one */}
             {message.content && (
               <Box style={{ padding: '16px' }}>
                 <Typography>{message.content}</Typography>
               </Box>
             )}
             
-            {/* Only show SQL code if it exists */}
+            {/* show SQL code*/}
             {message.queryCode && (
               <Box style={{ 
                 padding: '16px', 
@@ -423,13 +386,13 @@ function QueryPage() {
               </Box>
             )}
             
-            {/* Show results if we have them */}
+            {/* Show results if LLM works*/}
             {message.results && message.columns && (
               <Box style={{ width: '100%' }}>
                 <QueryResults 
                   results={message.results} 
                   columns={message.columns} 
-                  onExport={message.isExport ? null : handleOpenExportDialog}
+                  onExport={message.isExport ? null : openExportStuff}
                 />
               </Box>
             )}
@@ -438,13 +401,6 @@ function QueryPage() {
       );
     });
   };
-
-  // function validateExport(exportData) {
-  //   if (!exportData) return false;
-  //   if (!exportData.results || !Array.isArray(exportData.results)) return false;
-  //   if (!exportData.columns || !Array.isArray(exportData.columns)) return false;
-  //   return true;
-  // }
 
   
   // improve later
@@ -476,10 +432,8 @@ function QueryPage() {
             Chat with your Data
           </Typography>
         </Box>
-        
-       
+         
         {activeFile ? (
-          // File info when a file is active
           <Alert 
             icon={false}
             severity="info" 
@@ -504,7 +458,7 @@ function QueryPage() {
                 size="small" 
                 onClick={() => {
                   console.log("Upload new file button clicked");
-                  setFileActive(null);
+                  setFile(null);
                 }}
                 sx={{ ml: 2 }}
               >
@@ -513,14 +467,12 @@ function QueryPage() {
             </Box>
           </Alert>
         ) : (
-          // File upload section if no active file
+          // File upload section
           <Paper 
             elevation={0}
             sx={{ p: 3, mb: 3, width: '100%' }}
             style={{
-              border: '1px solid',
-              borderColor: '#ccc',
-              borderRadius: '8px',
+              borderRadius: '12px',
               backgroundColor: lightPurple
             }}
           >
@@ -530,7 +482,14 @@ function QueryPage() {
             <Typography variant="body2" color="text.secondary" style={{ marginBottom: '24px' }}>
               Upload a CSV file or SQLite database to start querying it
             </Typography>
-            <FileUpload onUploadSuccess={handleNewFileUploaded} />
+            <FileUpload onUploadSuccess={(fileInfo) => {
+              console.log("New file uploaded:", fileInfo);
+              setFile(fileInfo.filename);
+              setStuff(fileInfo.schema);
+              // reset previous chat
+              addChat([]);
+              console.log("Conversation cleared for new file");
+            }} />
           </Paper>
         )}
       </Box>
@@ -560,30 +519,32 @@ function QueryPage() {
 
           {/* Input box */}
           <QueryInput 
-            onSubmit={handleQuerySubmit} 
+            onSubmit={sendQuery} 
             loading={loading} 
             disabled={!activeFile}
+            style={{marginTop: '8px'}}
             // showSuggestions={true} 
           />
           
-          {/* Small help text at the bottom */}
+          {/* help text at the bottom*/}
           <Typography variant="caption" color="text.secondary" style={{ display: 'block', textAlign: 'center', marginTop: '16px' }}>
             Try asking "How many rows are in the file?" or "Show me the first 10 records"
           </Typography>
         </>
       )}
       
-      {/* Export dialog */}
+      { 
+      exportDialogOpen ?  
       <ExportTemplatesDialog
         open={exportDialogOpen}
-        onClose={handleCloseExportDialog}
+        onClose={setSchema}
         data={exportData?.results || []}
         columns={exportData?.columns || []}
-        initialFormat={exportData?.exportFormat || 'xlsx'}
-        initialTemplateType={exportData?.exportTemplateType || 'basic'}
-      />
+        initialFormat="xlsx"
+        initialTemplateType="basic"
+        style={{maxHeight: '90vh'}}
+      /> : null /* has to be here for some reason */}
     </Box>
   );
 }
-
 export default QueryPage;
