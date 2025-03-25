@@ -459,7 +459,7 @@ const exportAsExcel = (results, columns, filename, config, template) => {
     const statsSheet = XLSX.utils.aoa_to_sheet(summaryData);
     XLSX.utils.book_append_sheet(workbook, statsSheet, 'Summary Statistics');
     
-    XLSX.writeFile(workbook, filename);
+    XLSX.writeFile(workbook, filename, { bookType: 'xlsx' });
     return;
   }
   
@@ -550,7 +550,7 @@ const exportAsExcel = (results, columns, filename, config, template) => {
       const categorySheet = XLSX.utils.aoa_to_sheet(categoryData);
       XLSX.utils.book_append_sheet(workbook, categorySheet, 'Category Analysis');
       
-      XLSX.writeFile(workbook, filename);
+      XLSX.writeFile(workbook, filename, { bookType: 'xlsx' });
       return;
     }
   }
@@ -667,7 +667,7 @@ const exportAsExcel = (results, columns, filename, config, template) => {
         const quarterlySheet = XLSX.utils.aoa_to_sheet(periodData);
         XLSX.utils.book_append_sheet(workbook, quarterlySheet, 'Quarterly Report');
         
-        XLSX.writeFile(workbook, filename);
+        XLSX.writeFile(workbook, filename, { bookType: 'xlsx' });
         return;
       }
     }
@@ -794,7 +794,7 @@ const exportAsExcel = (results, columns, filename, config, template) => {
   }
   
   // Save the Excel file
-  XLSX.writeFile(workbook, filename);
+  XLSX.writeFile(workbook, filename, { bookType: 'xlsx' });
 };
 
 /**
