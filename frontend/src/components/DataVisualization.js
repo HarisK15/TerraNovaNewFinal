@@ -13,8 +13,7 @@ const clrs = ['#8884d8', '#82ca9d', '#ffc658', '#ff8042', '#0088FE', '#00C49F'];
 
 //visualization component
 const DataVisualization = ({ results, columns }) => {
-const graphType = useState('bar')[0];
-const setGraphType = useState('bar')[1];
+const [graphType, setGraphType] = useState('bar');
 const [xAxis, setXAxis] = useState('');
 const [y_axis, set_y_axis] = useState(''); 
   const [data, setData] = useState([]);

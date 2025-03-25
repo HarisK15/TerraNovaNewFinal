@@ -2,47 +2,46 @@ import React, { useState, useEffect } from 'react';
 import { TextField, Button, Box, Paper, CircularProgress } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
 
-// This component handles the input field for user queries
-// It takes the query from the user and sends it to the parent component
+// handles users questions
 function QueryInput({ onSubmit, disabled, loading }) {
+  // states
   const [query, setQuery] = useState('');
-  const [charCount, setCharCount] = useState(0);
+  const [chars, setChars] = useState(0);
   
-  // Log when component mounts
+  // Todo: maybe add history of queries
+  
+  // runs when component loads
   useEffect(() => {
-    console.log("QueryInput component mounted");
+    console.log("input box ready");
     return () => {
-      console.log("QueryInput component unmounted");
     };
   }, []);
   
-  // This function handles when the user submits a query
-  const handleSubmit = (e) => {
+  
+  const submitQuery = (e) => {
     e.preventDefault();
-    console.log("Query submitted:", query);
     
     if (query.trim() !== '') {
       onSubmit(query.trim());
-      setQuery(''); // Clear the input field after submission
-      setCharCount(0); // Reset character count
-      console.log("Input field cleared after submission");
+      setQuery(''); 
+      setChars(0);
     } else {
-      console.log("Empty query, not submitting");
+      console.log("empty query :/");
     }
   };
   
-  // This updates the character count when query changes
-  const handleQueryChange = (e) => {
-    const newValue = e.target.value;
-    setQuery(newValue);
-    setCharCount(newValue.length);
-    console.log("Query updated, char count:", newValue.length);
+  const onType = (e) => {
+    const val = e.target.value;
+    setQuery(val);
+    setChars(val.length);
   };
+
+  // Todo: add validation for max length
 
   return (
     <Paper 
       component="form" 
-      onSubmit={handleSubmit} 
+      onSubmit={submitQuery} 
       elevation={2}
       sx={{
         p: 2,
@@ -50,20 +49,18 @@ function QueryInput({ onSubmit, disabled, loading }) {
         alignItems: 'center',
         backgroundColor: '#fff',
         borderRadius: 2,
-        // Adding a border for better visibility
         border: '1px solid #e0e0e0'
       }}
     >
-      {/* Text input for the query */}
+      {/* text box */}
       <TextField
         variant="outlined"
         placeholder="Ask a question about your data..."
         value={query}
-        onChange={handleQueryChange}
+        onChange={onType}
         fullWidth
         autoFocus
         disabled={disabled}
-        // Simple styling for the input field
         InputProps={{
           sx: {
             borderRadius: 2
@@ -71,12 +68,12 @@ function QueryInput({ onSubmit, disabled, loading }) {
         }}
       />
       
-      {/* Character count display */}
+      {/* shows how many chars typed */}
       <Box sx={{ mx: 1, color: '#888', fontSize: '0.75rem', minWidth: '40px' }}>
-        {charCount > 0 && `${charCount}`}
+        {chars > 0 && `${chars}`}
       </Box>
       
-      {/* Submit button */}
+      {/* button to send */}
       <Button
         type="submit"
         variant="contained"
@@ -90,6 +87,4 @@ function QueryInput({ onSubmit, disabled, loading }) {
     </Paper>
   );
 }
-
-// Export the component so it can be used in other files
 export default QueryInput;
