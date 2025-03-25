@@ -1,86 +1,82 @@
 import React, { useEffect } from 'react';
-import { Typography, Button, Box, Card, CardContent, Grid, alpha, useTheme, Chip } from '@mui/material';
+import { Typography, Button, Box, Card, CardContent, Grid, useTheme, Chip } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import FileUpload from '../components/FileUpload';
 import StorageIcon from '@mui/icons-material/Storage';
 import ChatIcon from '@mui/icons-material/Chat';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import PsychologyIcon from '@mui/icons-material/Psychology';
+// import Footer from '../components/Footer'
 
-// my dissertation homepage
-// TODO: maybe add dark mode?? need to check how to do this
+// homepage
+// maybe add dark mode
 
 function Home() {
   var nav = useNavigate();
   const theme = useTheme();
-  
-    // some colors I might use later
-  const btn_color = 'primary'
-  
-  // this is for testing
+    //colours to use
+  const btn_colour = 'primary'
+  // testing
 var isDebug = false;
 
 
-  // log stuff when page loads
+  // common purple colors for consistency
+  let lightPurple = '#ede7f6'; 
+  let mainPurple = '#9c27b0';  
+  let darkPurple = '#7b1fa2';  
+
   useEffect(() => {
     console.log("Home page loaded")
-    // stuff to add later
-    // TODO analytics here??
-    
     var page_title = document.title
     console.log('current page: ' + page_title)
-    
-    //TODO fix this part
-
+    //fix this part
   }, []);
 
-  // go to query page
+
+  // function openSettings() {
+    //   pass
+    // }
+
+// go to next page
   function navQuery() {
     console.log("going to query page...")
     nav('/query');
   }
   
-
   return (
-    <Box sx={{ py: 3 }}>
+    <Box sx={{ py: 3, px: 2 }}>
       {/* top part */}
       <Box 
         sx={{ 
           textAlign: 'center', 
-          mb: 6,
-          maxWidth: 800,
+          mb: 5,
+          maxWidth: 750,
           mx: 'auto'
         }}
       >
-
-        {/* chip with label */}
         <Chip 
           label="AI-Powered SQL Generation" 
           size="small" 
           sx={{ 
             mb: 3, 
-            background: alpha(theme.palette.primary.main, 0.1),
-            color: theme.palette.primary.main,
+            background: lightPurple,
+            color: darkPurple,
             fontWeight: 500,
-            px: 1,
+            px: 1.5,
             '& .MuiChip-label': { px: 1 }
           }} 
         />
-        
         
         {/* title */}
         <Typography 
           variant="h3" 
           component="h1" 
-          sx={{ 
+          style={{ 
             fontWeight: 700,
-            mb: 2,
-            // gradient text from stackoverflwo
-            background: `linear-gradient(120deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.light} 50%, ${theme.palette.secondary.light} 100%)`,
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            backgroundClip: 'text',
-            textFillColor: 'transparent'
+            marginBottom: '16px',
+            color: mainPurple
+            // add gradient
+      
           }}
         >
           Query Your Data with Natural Language
@@ -90,11 +86,12 @@ var isDebug = false;
         <Typography 
           variant="h6" 
           color="text.secondary"
-          sx={{ mb: 4, maxWidth: 600, mx: 'auto', lineHeight: 1.6 }}
+          sx={{ mb: 3.5, maxWidth: 580, mx: 'auto', lineHeight: 1.5 }}
         >
           TerraNova helps you analyze and export data through natural language queries without needing to know SQL.
         </Typography>
         
+
 
         {/* button */}
         <Button 
@@ -102,28 +99,25 @@ var isDebug = false;
           size="large"
           endIcon={<ArrowForwardIcon />}
           onClick={navQuery}
-          sx={{ px: 4, py: 1.5 }}
+          sx={{ px: 3.5, py: 1.2 }}
         >
           Try It Now
         </Button>
       </Box>
 
 
-
-      {/* cards */}
-      <Grid container spacing={4} sx={{ mb: 6 }}>
-        
+      <Grid container spacing={3} sx={{ mb: 5 }}>
         {/* card 1 */}
-        <Grid item xs={12} md={4}>
-          <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-            <CardContent sx={{ flexGrow: 1 }}>
+        <Grid item xs={12} md={5}>
+          <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column', boxShadow: '0px 2px 4px rgba(0,0,0,0.1)' }}>
+            <CardContent sx={{ flexGrow: 1, py: 3 }}>
               <Box
                 sx={{
                   width: 48,
                   height: 48,
                   borderRadius: 1,
-                  bgcolor: alpha(theme.palette.primary.main, 0.1),
-                  color: theme.palette.primary.main,
+                  bgcolor: lightPurple,
+                  color: mainPurple,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -143,18 +137,17 @@ var isDebug = false;
         </Grid>
         
         
-        
         {/* card 2 */}
-        <Grid item xs={12} md={4}>
-          <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+        <Grid item xs={12} md={3.5}>
+          <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column', boxShadow: '0px 2px 4px rgba(0,0,0,0.1)' }}>
             <CardContent sx={{ p: 3, flexGrow: 1 }}>
               <Box
                 sx={{
                   width: 48,
                   height: 48,
                   borderRadius: 1,
-                  bgcolor: alpha(theme.palette.primary.main, 0.1),
-                  color: theme.palette.primary.main,
+                  backgroundColor: lightPurple,
+                  color: mainPurple,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -175,21 +168,21 @@ var isDebug = false;
         
         
         
-        {/* card 3 - data insights */}
-        <Grid item xs={12} md={4}>
-          <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-            <CardContent sx={{ flexGrow: 1, p: 4 }}>
+        {/* card 3*/}
+        <Grid item xs={12} md={3.5}>
+          <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column', boxShadow: '0px 2px 4px rgba(0,0,0,0.1)' }}>
+            <CardContent sx={{ flexGrow: 1, p: 3.5 }}>
               <Box
                 sx={{
-                  width: 48,
-                  height: 48,
-                  borderRadius: 1,
-                  bgcolor: alpha(theme.palette.primary.main, 0.1),
-                  color: theme.palette.primary.main,
+                  width: 42,
+                  height: 42,
+                  borderRadius: 1.5,
+                  backgroundColor: lightPurple,
+                  color: mainPurple,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  mb: 2
+                  mb: 2.5
                 }}
               >
                 <PsychologyIcon />
@@ -200,40 +193,39 @@ var isDebug = false;
               <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
                 Get automatic visualizations and statistical analysis of your query results.
               </Typography>
-              
-              {/* TODO add more features here */}
             </CardContent>
           </Card>
         </Grid>
       </Grid>
 
-      
-      {/* upload area */}
+      {/* upload section */}
       <Box sx={{ 
+        maxWidth: '100%', 
         p: 3, 
-        borderRadius: 4, 
-        bgcolor: '#F9FAFB',
-        border: '1px dashed',
-        borderColor: 'divider',
-        textAlign: 'center',
-        mb: 0
+        borderRadius: 2,
+        background: '#ffffff', 
+        borderLeft: '4px solid ' + mainPurple,
+        mb: 4,
       }}>
-        <Typography variant="h5" component="h2" sx={{ mb: 2, fontWeight: 600 }}>
-          Upload Your Data
+        <Typography variant="h5" component="h2" sx={{ mb: 2, fontWeight: 600, color: '#333' }}>
+          Upload Your Data File
         </Typography>
-        <Typography variant="body1" color="text.secondary" sx={{ mb: 4, maxWidth: 600, mx: 'auto' }}>
-          Upload your CSV files to start querying. We support most standard CSV formats.
+        <Typography color="text.secondary" sx={{ mb: 3 }}>
+          Supported formats: CSV, SQLite DB files
         </Typography>
         
-        {/* upload component */}
         <FileUpload />
+      </Box>
+      
+
+
+      {/* footer note */}
+      <Box sx={{ textAlign: 'center', mt: 6, opacity: 0.7 }}>
+        <Typography variant="body2" color="text.secondary">
+          KCL | TerraNova | Haris Kamran | 2025
+        </Typography>
       </Box>
     </Box>
   );
 }
-
-// TODO fix margin on mobile
-// TODO add footer?
-
-
 export default Home;
