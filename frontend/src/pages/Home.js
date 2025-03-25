@@ -74,7 +74,7 @@ var isDebug = false;
           style={{ 
             fontWeight: 700,
             marginBottom: '16px',
-            color: mainPurple
+            color: '#9E77ED'
             // add gradient
       
           }}
@@ -117,7 +117,7 @@ var isDebug = false;
                   height: 48,
                   borderRadius: 1,
                   bgcolor: lightPurple,
-                  color: mainPurple,
+                  color: '#9E77ED',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -147,7 +147,7 @@ var isDebug = false;
                   height: 48,
                   borderRadius: 1,
                   backgroundColor: lightPurple,
-                  color: mainPurple,
+                  color: '#9E77ED',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -178,7 +178,7 @@ var isDebug = false;
                   height: 42,
                   borderRadius: 1.5,
                   backgroundColor: lightPurple,
-                  color: mainPurple,
+                  color: '#9E77ED',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',

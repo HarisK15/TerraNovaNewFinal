@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
@@ -6,31 +6,28 @@ import { AppBar, Toolbar, Typography, Container, Box, Button } from '@mui/materi
 import TerminalIcon from '@mui/icons-material/Terminal';
 import { Link } from 'react-router-dom';
 
-// Import the pages for our app
+// Import pages
 import Home from './pages/Home';
 import QueryPage from './pages/QueryPage';
 
-// Setting up a theme for the app
-// I found these colors online and thought they looked nice
-console.log("Creating app theme...");
+// Create a modern theme with gradient accents
 const theme = createTheme({
-  // Color palette
   palette: {
     mode: 'light',
     primary: {
-      main: '#7F56D9',  // Purple color
+      main: '#7F56D9',  // Modern purple
       light: '#9E77ED',
       dark: '#6941C6',
       contrastText: '#FFFFFF'
     },
     secondary: {
-      main: '#F670C7',  // Pink color
+      main: '#F670C7',  // Vibrant pink
       light: '#FDA7DF',
       dark: '#E64BB5',
       contrastText: '#FFFFFF'
     },
     background: {
-      default: '#FAFAFF',  // Off-white
+      default: '#FAFAFF',  // Very slight purple tint to white
       paper: '#FFFFFF'
     },
     text: {
@@ -39,7 +36,6 @@ const theme = createTheme({
     },
     divider: 'rgba(0, 0, 0, 0.08)'
   },
-  // Typography settings
   typography: {
     fontFamily: '"-apple-system", "BlinkMacSystemFont", "Inter", "Roboto", sans-serif',
     h1: { fontWeight: 700 },
@@ -53,11 +49,9 @@ const theme = createTheme({
       textTransform: 'none',
     }
   },
-  // Border radius for components
   shape: {
     borderRadius: 12
   },
-  // Simplified shadows
   shadows: [
     'none',
     '0px 1px 3px rgba(16, 24, 40, 0.1), 0px 1px 2px rgba(16, 24, 40, 0.06)',
@@ -66,7 +60,6 @@ const theme = createTheme({
     '0px 20px 24px -4px rgba(16, 24, 40, 0.08), 0px 8px 8px -4px rgba(16, 24, 40, 0.03)',
     ...Array(20).fill('none')
   ],
-  // Simple component overrides
   components: {
     MuiAppBar: {
       styleOverrides: {
@@ -77,6 +70,14 @@ const theme = createTheme({
         }
       }
     },
+    MuiPaper: {
+      styleOverrides: {
+        root: {
+          borderRadius: 16,
+          boxShadow: '0px 4px 8px -2px rgba(16, 24, 40, 0.1), 0px 2px 4px -2px rgba(16, 24, 40, 0.06)'
+        }
+      }
+    },
     MuiButton: {
       styleOverrides: {
         root: {
@@ -84,52 +85,40 @@ const theme = createTheme({
           padding: '10px 18px',
           fontWeight: 500,
           boxShadow: 'none',
+          '&:hover': {
+            boxShadow: '0px 4px 8px -2px rgba(16, 24, 40, 0.1), 0px 2px 4px -2px rgba(16, 24, 40, 0.06)'
+          }
         },
         containedPrimary: {
           background: 'linear-gradient(90deg, #7F56D9 0%, #9E77ED 100%)'
+        }
+      }
+    },
+    MuiTextField: {
+      styleOverrides: {
+        root: {
+          '& .MuiOutlinedInput-root': {
+            borderRadius: 8
+          }
         }
       }
     }
   }
 });
 
-// Main App component
 function App() {
-  // Log when the app renders
-  useEffect(() => {
-    console.log("App component rendered");
-    console.log("Current theme:", theme);
-    
-    // Check if we're in development or production
-    if (process.env.NODE_ENV === 'development') {
-      console.log("Running in development mode");
-    } else {
-      console.log("Running in production mode");
-    }
-    
-    // Log the current date for debugging
-    console.log("App started at:", new Date().toLocaleString());
-    
-    // TODO: Add more app-wide settings and configurations
-    // TODO: Implement dark mode toggle
-    // TODO: Add error boundary
-  }, []);
-  
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <Router>
-        {/* Main container with gradient background */}
         <Box sx={{ 
           display: 'flex', 
           flexDirection: 'column', 
           minHeight: '100vh',
           background: 'linear-gradient(180deg, rgba(127, 86, 217, 0.02) 0%, rgba(255, 255, 255, 0) 100%)'
         }}>
-          {/* App header/navbar */}
           <AppBar position="static" elevation={0}>
             <Toolbar sx={{ borderBottom: '1px solid', borderColor: 'divider' }}>
-              {/* Logo icon */}
               <Box 
                 sx={{ 
                   display: 'flex', 
@@ -142,8 +131,6 @@ function App() {
               >
                 <TerminalIcon sx={{ fontSize: 28 }} />
               </Box>
-              
-              {/* App title */}
               <Typography 
                 variant="h6" 
                 component={Link} 
@@ -158,22 +145,18 @@ function App() {
               >
                 TerraNova
               </Typography>
-              
-              {/* Navigation button */}
               <Button 
                 color="primary" 
                 variant="contained" 
                 component={Link} 
                 to="/query"
                 sx={{ ml: 2 }}
-                onClick={() => console.log("Navigate to Query page")}
               >
                 Go to Query
               </Button>
             </Toolbar>
           </AppBar>
           
-          {/* Main content area */}
           <Container maxWidth="lg" sx={{ mt: 4, mb: 4, flexGrow: 1 }}>
             <Routes>
               <Route path="/" element={<Home />} />
@@ -181,7 +164,6 @@ function App() {
             </Routes>
           </Container>
           
-          {/* Footer */}
           <Box 
             component="footer" 
             sx={{ 
@@ -196,7 +178,7 @@ function App() {
           >
             <Container maxWidth="sm">
               <Typography variant="body2" color="text.secondary" align="center">
-                TerraNova &copy; {new Date().getFullYear()} - KCL University Project
+                TerraNova © {new Date().getFullYear()}
               </Typography>
             </Container>
           </Box>

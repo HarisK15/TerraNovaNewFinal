@@ -12,12 +12,16 @@ import {
   useTheme,
   Chip
 } from '@mui/material';
+
+// import fetch from 'node-fetch';
 import axios from 'axios';
 import ChatIcon from '@mui/icons-material/Chat';
 import SmartToyIcon from '@mui/icons-material/SmartToy';
 import PersonIcon from '@mui/icons-material/Person';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import StorageIcon from '@mui/icons-material/Storage';
+// import CodeIcon from '@mui/icons-material/Code';
+// import BarChartIcon from '@mui/icons-material/BarChart'; 
 import QueryInput from '../components/QueryInput';
 import QueryResults from '../components/QueryResults';
 import FileUpload from '../components/FileUpload';
@@ -26,70 +30,101 @@ import { useNavigate } from 'react-router-dom';
 
 // This is the main query page component where users can talk to their data
 // It allows uploading files, asking questions, and viewing results
+
+// todo:
+// - Add visualisation options for numerical data
+// - Implement query history saving
+// - Add proper error handling with retry logic
+
+
 function QueryPage() {
-  // State variables to store all our data
-  const [activeFile, setActiveFile] = useState(null);
-  const [schema, setSchema] = useState(null);
+// State variables to store all our data
+  const [activeFile, setFileActive] = useState(null);
+  const [schema, updateSchemaData] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [conversation, setConversation] = useState([]);
-  const [exportDialogOpen, setExportDialogOpen] = useState(false);
+  const [err, setError] = useState(null);
+  const [msgs, setConversation] = useState([]);
+  const [exportDialogOpen, toggleExportDialog] = useState(false);
   const [exportData, setExportData] = useState(null);
-  const chatEndRef = useRef(null); // This is for auto-scrolling to the bottom
+  // const [darkMode, setDarkMode] = useState(false);
+  const scrollRef = useRef(null); // This is for auto-scrolling to the bottom
   const navigate = useNavigate();
   const theme = useTheme();
   
+  // same purple colors as Home.js
+  const lightPurple = '#ede7f6'; 
+  const purpleMain = '#9E77ED'; 
+  const darkPurple = '#7b1fa2';
+
+  // use somewhere
+  var light_mode_bg = '#ffffff';
+  
+  // TODO: Remove this before production
   console.log("QueryPage rendering - active file:", activeFile);
+  
+  
+  // const testData = {
+  //   file: 'test_data.csv',
+  //   schema: ['id', 'name', 'age', 'occupation', 'salary'],
+  //   sampleQueries: [
+  //     'Show me the average salary by occupation',
+  //     'How many people are older than 30?',
+  //     'Who has the highest salary?'
+  //   ]
+  // };
   
   // Fetch active file when component loads
   useEffect(() => {
-    console.log("QueryPage mounted - fetching active file");
+      console.log("QueryPage mounted - fetching active file");
     fetchActiveFile();
     
-    // Cleanup function 
+    //todo:Add proper cleanup function
     return () => {
-      console.log("QueryPage unmounting...");
-      // TODO: Add more cleanup logic later
+      // console.log('component unmounting');
     };
   }, []);
 
-  // Auto-scroll to bottom of chat when conversation updates
+  // Scroll to bottom of chat when messages change
   useEffect(() => {
-    console.log("Conversation updated, scrolling to bottom");
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [conversation]);
+    // console.log("scrolling down");
+    if (scrollRef.current) {
+      scrollRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [msgs]);
 
   // Function to get the active file from the backend
   const fetchActiveFile = async () => {
-    console.log("Fetching active file...");
+
+    // setFileActive('test.csv');
+    // updateSchemaData(['id', 'name', 'value']);
+    // return;
+
     try {
-      setLoading(true);
-      const response = await axios.get('/active-file');
+      let response = await axios.get('http://localhost:5001/api/files/active');
       console.log("Active file response:", response.data);
       
       if (response.data.success) {
-        setActiveFile(response.data.file);
-        setSchema(response.data.schema);
+        setFileActive(response.data.file);
+        updateSchemaData(response.data.schema);
         console.log("Set active file:", response.data.file);
         console.log("Schema:", response.data.schema);
       }
-      setLoading(false);
-    } catch (err) {
-      console.error("Error fetching active file:", err);
-      setError('No active file found. Please upload a file first.');
-      setLoading(false);
+    } catch (error) {
+      console.error("Error fetching active file:", error);
     }
   };
 
   // This function handles sending the query to the backend
-  const submitQuery = async (query) => {
+  const handleQuerySubmit = async (query) => {
     console.log("Submitting query:", query);
     
+    // Check if query is empty
     if (!query.trim()) {
-      console.log("Empty query, not submitting");
+      console.log("Empty query");
       return;
     }
 
+    // Return if no active file
     if (!activeFile) {
       console.log("No active file, showing error");
       setError('Please upload a file first');
@@ -98,8 +133,8 @@ function QueryPage() {
 
     setLoading(true);
     // Add user query to conversation
-    setConversation(prevConversation => [
-      ...prevConversation,
+    setConversation(prevMsgs => [
+      ...prevMsgs,
       { type: 'user', content: query }
     ]);
 
@@ -108,155 +143,170 @@ function QueryPage() {
       const response = await axios.post('/query', { query });
       console.log("Query response:", response.data);
       
+      // Only proceed if success is true
       if (response.data.success) {
-        // Check if this is an export intent
-        if (response.data.export_intent) {
-          console.log("Export intent detected");
-          setExportData({
+        // Check if this is an export request
+        if (response.data.is_export) {
+          // Handle export response
+          console.log("Export request detected");
+          
+          // Build export data object
+          const exportData = {
             results: response.data.results,
             columns: response.data.columns,
-            exportFormat: response.data.export_format,
-            exportTemplateType: response.data.export_template_type,
-            intent: response.data.export_intent
-          });
+            exportFormat: response.data.export_format || 'xlsx',
+            exportTemplateType: response.data.export_template || 'basic'
+          };
           
-          // Add the response to conversation
-          setConversation(prevConversation => [
-            ...prevConversation,
+          // Add response to conversation
+          setConversation(prevMsgs => [
+            ...prevMsgs,
             { 
               type: 'system', 
               content: 'I\'ll prepare your export with the requested data.', 
-              queryType: response.data.query_type || 'sql',
-              queryCode: response.data.query_code || response.data.sql_query,
+              queryType: response.data.query_type,
+              queryCode: response.data.query_code,
               results: response.data.results,
               columns: response.data.columns,
-              exportIntent: response.data.export_intent,
-              exportFormat: response.data.export_format,
-              exportTemplateType: response.data.export_template_type,
               isExport: true
             }
           ]);
           
-          // Open the export dialog automatically
-          setExportDialogOpen(true);
+          // Set export data
+          setExportData(exportData);
+          
+         // Open the export dialog automatically
+          toggleExportDialog(true);
         } else {
           // Regular query response (not an export)
           console.log("Regular query response with results");
-          setConversation(prevConversation => [
-            ...prevConversation,
-            { 
+          
+          // First make a local copy of our msgs
+          const newMsgs = [...msgs];
+          
+          // Then add the system response
+          newMsgs.push({
               type: 'system', 
               content: '', // No explanation - just showing data
-              queryType: response.data.query_type || 'sql',
-              queryCode: response.data.query_code || response.data.sql_query, // Support both new and old API responses
+              queryType: response.data.query_type,
+              queryCode: response.data.query_code,
               results: response.data.results,
               columns: response.data.columns
-            }
-          ]);
+          });
+          
+          // Update state
+          setConversation(newMsgs);
         }
       } else {
         // Add error message to conversation
         console.error("Query failed:", response.data.error);
-        setConversation(prevConversation => [
-          ...prevConversation,
-          { type: 'error', content: response.data.error || 'An error occurred processing your query.' }
-        ]);
+        
+        const errorMsg = response.data.error || 'An error occurred processing your query.';
+        setConversation([...msgs, { type: 'error', content: errorMsg }]);
       }
     } catch (err) {
       // Add error message to conversation
       console.error("Query request error:", err);
-      setConversation(prevConversation => [
-        ...prevConversation,
-        { type: 'error', content: err.response?.data?.error || 'An error occurred processing your query.' }
+      
+      // Check if we got a response error message
+      let errMsg = '';
+      if (err.response && err.response.data && err.response.data.error) {
+        errMsg = err.response.data.error;
+      } else {
+        errMsg = 'An error occurred processing your query.';
+      }
+      
+      setConversation(prevMsgs => [
+        ...prevMsgs,
+        { type: 'error', content: errMsg }
       ]);
     } finally {
+      // Make sure to reset loading state
       setLoading(false);
     }
   };
-
+  
   // This is called when a new file is uploaded
   const handleNewFileUploaded = (fileInfo) => {
     console.log("New file uploaded:", fileInfo);
-    setActiveFile(fileInfo.filename);
-    setSchema(fileInfo.schema);
+    setFileActive(fileInfo.filename);
+    updateSchemaData(fileInfo.schema);
     // Clear previous conversation when a new file is uploaded
     setConversation([]);
     console.log("Conversation cleared for new file");
   };
-
+  
   // This function opens the export dialog
   const handleOpenExportDialog = (data) => {
     console.log("Opening export dialog with data:", data);
     setExportData(data);
-    setExportDialogOpen(true);
+    toggleExportDialog(true);
   };
 
   // This function closes the export dialog
   const handleCloseExportDialog = () => {
     console.log("Closing export dialog");
-    setExportDialogOpen(false);
+    toggleExportDialog(false);
   };
-
+  
   // Function to render the chat messages
-  const renderChatMessages = () => {
-    if (conversation.length === 0) {
+  const renderChatMsgs = () => {
+    if (msgs.length === 0) {
       return (
         <Box 
-          sx={{ 
+          style={{ 
             display: 'flex', 
             flexDirection: 'column', 
             alignItems: 'center', 
             justifyContent: 'center',
-            py: 8,
-            px: 3,
-            bgcolor: alpha(theme.palette.primary.main, 0.02),
-            borderRadius: 4,
+            padding: '32px',
+            backgroundColor: lightPurple,
+            borderRadius: '8px',
             border: '1px dashed',
-            borderColor: alpha(theme.palette.primary.main, 0.1),
+            borderColor: '#ccc',
           }}
         >
-          <HelpOutlineIcon sx={{ fontSize: 48, color: alpha(theme.palette.text.secondary, 0.5), mb: 2 }} />
-          <Typography variant="h6" sx={{ mb: 2, fontWeight: 600, textAlign: 'center' }}>
+          <HelpOutlineIcon style={{ fontSize: '36px', color: '#666', marginBottom: '16px' }} />
+          <Typography variant="h6" style={{ marginBottom: '16px', fontWeight: 600, textAlign: 'center' }}>
             Ask a question about your data
           </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', maxWidth: 450 }}>
+          <Typography variant="body2" color="text.secondary" style={{ textAlign: 'center', maxWidth: 450 }}>
             Try asking questions like "How many rows are in this file?" or "Show me the first 10 records"
           </Typography>
         </Box>
       );
     }
 
-    return conversation.map((message, index) => {
+    return msgs.map((message, index) => {
       // This is the message from the user
       if (message.type === 'user') {
         return (
-          <Box key={index} sx={{ display: 'flex', justifyContent: 'flex-end', mb: 3 }}>
-            <Box sx={{ display: 'flex', maxWidth: '80%' }}>
+          <Box key={index} sx={{ display: 'flex', justifyContent: 'flex-end' }} m={2}>
+            <Box style={{ maxWidth: '80%' }}>
               <Box 
-                sx={{ 
-                  bgcolor: alpha(theme.palette.primary.main, 0.1),
-                  color: theme.palette.text.primary,
-                  borderRadius: '12px 12px 0 12px',
-                  p: 2,
-                  mr: 1,
+                p={2}
+                style={{ 
+                  backgroundColor: lightPurple,
+                  borderRadius: '12px',
+                  marginRight: '8px',
                 }}
               >
-                <Typography variant="body1">{message.content}</Typography>
+                <Typography>{message.content}</Typography>
               </Box>
-              <Box 
-                sx={{ 
-                  width: 32, 
-                  height: 32, 
-                  borderRadius: '50%', 
-                  bgcolor: alpha(theme.palette.primary.main, 0.9),
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: 'white'
-                }}
-              >
-                <PersonIcon sx={{ fontSize: 18 }} />
-              </Box>
+            </Box>
+            <Box 
+              style={{ 
+                width: '30px', 
+                height: '30px', 
+                borderRadius: '50%', 
+                backgroundColor: purpleMain,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#fff',
+              }}
+            >
+              <PersonIcon fontSize="small" />
             </Box>
           </Box>
         );
@@ -265,13 +315,13 @@ function QueryPage() {
       // This is an error message
       if (message.type === 'error') {
         return (
-          <Box key={index} sx={{ display: 'flex', mb: 3 }}>
+          <Box key={index} style={{ display: 'flex', marginBottom: '16px' }}>
             <Box 
               sx={{ 
-                width: 32, 
-                height: 32, 
+                width: 30, 
+                height: 30, 
                 borderRadius: '50%', 
-                bgcolor: theme.palette.error.main,
+                bgcolor: '#f44336',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -279,18 +329,18 @@ function QueryPage() {
                 mr: 1
               }}
             >
-              <SmartToyIcon sx={{ fontSize: 18 }} />
+              <SmartToyIcon fontSize="small" />
             </Box>
             <Box 
-              sx={{ 
-                bgcolor: alpha(theme.palette.error.main, 0.1),
-                color: theme.palette.error.main,
+              style={{ 
+                backgroundColor: '#f44336',
+                color: 'white',
                 borderRadius: '12px 12px 12px 0',
-                p: 2,
+                padding: '16px',
                 maxWidth: '80%'
               }}
             >
-              <Typography variant="body1">{message.content}</Typography>
+              <Typography>{message.content}</Typography>
             </Box>
           </Box>
         );
@@ -298,54 +348,54 @@ function QueryPage() {
       
       // This is the response from the system
       return (
-        <Box key={index} sx={{ display: 'flex', mb: 4 }}>
+        <Box key={index} m={3} style={{ display: 'flex' }}>
           <Box 
-            sx={{ 
-              width: 32, 
-              height: 32, 
+            style={{ 
+              width: '30px', 
+              height: '30px', 
               borderRadius: '50%', 
-              bgcolor: theme.palette.primary.main,
+              backgroundColor: purpleMain,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              color: 'white',
-              mr: 1,
+              color: '#fff',
+              marginRight: '8px',
               flexShrink: 0
             }}
           >
-            <SmartToyIcon sx={{ fontSize: 18 }} />
+            <SmartToyIcon fontSize="small" />
           </Box>
           <Box 
-            sx={{ 
-              bgcolor: 'white',
-              borderRadius: 3,
-              p: 0,
+            style={{ 
+              backgroundColor: 'white',
+              borderRadius: '8px',
+              padding: '0',
               width: '100%',
-              boxShadow: `0px 2px 8px ${alpha('#000', 0.05)}`
+              boxShadow: `0px 2px 8px rgba(0, 0, 0, 0.05)`
             }}
           >
             {/* Only show the content message if there is one */}
             {message.content && (
-              <Box sx={{ p: 2 }}>
-                <Typography variant="body1">{message.content}</Typography>
+              <Box style={{ padding: '16px' }}>
+                <Typography>{message.content}</Typography>
               </Box>
             )}
             
             {/* Only show SQL code if it exists */}
             {message.queryCode && (
-              <Box sx={{ 
-                p: 2, 
-                backgroundColor: alpha(theme.palette.primary.main, 0.05),
-                borderTop: message.content ? `1px solid ${alpha(theme.palette.divider, 0.5)}` : 'none',
-                borderBottom: message.results?.length > 0 ? `1px solid ${alpha(theme.palette.divider, 0.5)}` : 'none',
+              <Box style={{ 
+                padding: '16px', 
+                backgroundColor: lightPurple,
+                borderTop: message.content ? `1px solid #ccc` : 'none',
+                borderBottom: message.results?.length > 0 ? `1px solid #ccc` : 'none',
               }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                <Box style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
                   <Chip 
                     label={message.queryType === 'sql' ? 'SQL Query' : 'Query'} 
                     size="small" 
                     sx={{ 
-                      bgcolor: alpha(theme.palette.primary.main, 0.1),
-                      color: theme.palette.primary.main,
+                      backgroundColor: lightPurple,
+                      color: purpleMain,
                       fontWeight: 500,
                       fontSize: '0.75rem'
                     }} 
@@ -354,15 +404,15 @@ function QueryPage() {
                 <Typography 
                   variant="body2" 
                   component="pre" 
-                  sx={{ 
+                  style={{ 
                     fontFamily: 'monospace',
                     whiteSpace: 'pre-wrap',
                     wordBreak: 'break-word',
-                    m: 0,
-                    p: 1,
-                    bgcolor: alpha('#000', 0.03),
-                    borderRadius: 1,
-                    color: alpha(theme.palette.text.primary, 0.8),
+                    margin: '0',
+                    padding: '8px',
+                    backgroundColor: '#f7f7f7',
+                    borderRadius: '8px',
+                    color: '#666',
                     fontSize: '0.85rem',
                     overflow: 'auto'
                   }}
@@ -374,7 +424,7 @@ function QueryPage() {
             
             {/* Show results if we have them */}
             {message.results && message.columns && (
-              <Box sx={{ width: '100%' }}>
+              <Box style={{ width: '100%' }}>
                 <QueryResults 
                   results={message.results} 
                   columns={message.columns} 
@@ -388,24 +438,30 @@ function QueryPage() {
     });
   };
 
+  // function validateExport(exportData) {
+  //   if (!exportData) return false;
+  //   if (!exportData.results || !Array.isArray(exportData.results)) return false;
+  //   if (!exportData.columns || !Array.isArray(exportData.columns)) return false;
+  //   return true;
+  // }
+
+  
+  // improve later
   return (
-    <Box sx={{ maxWidth: '1000px', mx: 'auto', px: 3, py: 4 }}>
+    <Box sx={{ maxWidth: '1000px', mx: 'auto', p: 3 }}>
       {/* Header Section */}
-      <Box sx={{ mb: 4, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+      <Box sx={{ mb: 3, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
         <Box 
-          sx={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            mb: 3,
-          }}
+          m={2}
+          style={{ display: 'flex', alignItems: 'center' }}
         >
           <ChatIcon 
-            sx={{ 
-              fontSize: 36, 
-              mr: 2,
-              color: theme.palette.primary.main,
-              background: alpha(theme.palette.primary.main, 0.1),
-              p: 1,
+            style={{ 
+              fontSize: '28px', 
+              marginRight: '16px',
+              color: purpleMain,
+              background: lightPurple,
+              padding: '8px',
               borderRadius: '50%',
             }} 
           />
@@ -413,35 +469,32 @@ function QueryPage() {
             variant="h4" 
             sx={{ 
               fontWeight: 700,
-              background: `linear-gradient(90deg, ${theme.palette.primary.main} 0%, ${theme.palette.secondary.main} 100%)`,
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              backgroundClip: 'text',
-              textFillColor: 'transparent',
+              color: purpleMain
             }}
           >
             Chat with your Data
           </Typography>
         </Box>
         
-        {/* Show file info if we have an active file */}
+       
         {activeFile ? (
+          // File info when a file is active
           <Alert 
             icon={false}
             severity="info" 
-            sx={{ 
-              mb: 2, 
+            p={2}
+            style={{ 
+              marginBottom: '16px', 
               width: '100%', 
               maxWidth: 600,
-              borderRadius: 2,
-              backgroundColor: alpha(theme.palette.info.main, 0.05),
-              border: `1px solid ${alpha(theme.palette.info.main, 0.1)}`,
-              color: 'text.primary'
+              borderRadius: '8px',
+              backgroundColor: lightPurple,
+              border: `1px solid #ccc`,
             }}
           >
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-              <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                <StorageIcon sx={{ mr: 1, color: theme.palette.primary.main }} />
+            <Box style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+              <Box style={{ display: 'flex', alignItems: 'center' }}>
+                <StorageIcon style={{ marginRight: '8px', color: purpleMain }} />
                 <Typography variant="body2">
                   Active file: <strong>{activeFile}</strong>
                 </Typography>
@@ -450,7 +503,7 @@ function QueryPage() {
                 size="small" 
                 onClick={() => {
                   console.log("Upload new file button clicked");
-                  setActiveFile(null);
+                  setFileActive(null);
                 }}
                 sx={{ ml: 2 }}
               >
@@ -462,60 +515,58 @@ function QueryPage() {
           // File upload section if no active file
           <Paper 
             elevation={0}
-            sx={{ 
-              p: 4, 
-              mb: 4, 
-              width: '100%',
+            sx={{ p: 3, mb: 3, width: '100%' }}
+            style={{
               border: '1px solid',
-              borderColor: alpha(theme.palette.primary.main, 0.1),
-              borderRadius: 2,
-              backgroundColor: alpha(theme.palette.primary.main, 0.02)
+              borderColor: '#ccc',
+              borderRadius: '8px',
+              backgroundColor: lightPurple
             }}
           >
             <Typography variant="h6" gutterBottom>
               Upload a file to get started
             </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+            <Typography variant="body2" color="text.secondary" style={{ marginBottom: '24px' }}>
               Upload a CSV file or SQLite database to start querying it
             </Typography>
             <FileUpload onUploadSuccess={handleNewFileUploaded} />
           </Paper>
         )}
       </Box>
-
+      
       {/* Chat section */}
       {activeFile && (
         <>
           <Box 
-            sx={{ 
-              mb: 3, 
+            m={2} 
+            style={{ 
               maxHeight: '60vh',
               overflowY: 'auto',
-              p: 2,
+              padding: '16px',
               border: '1px solid',
-              borderColor: alpha(theme.palette.divider, 0.8),
-              borderRadius: 2,
-              bgcolor: alpha(theme.palette.background.default, 0.5)
+              borderColor: '#ccc',
+              borderRadius: '8px',
             }}
           >
-            {renderChatMessages()}
-            <div ref={chatEndRef} />
+            {renderChatMsgs()}
+            <div ref={scrollRef} />
           </Box>
 
           {/* Input box */}
           <QueryInput 
-            onSubmit={submitQuery} 
+            onSubmit={handleQuerySubmit} 
             loading={loading} 
             disabled={!activeFile}
+            // showSuggestions={true} 
           />
           
           {/* Small help text at the bottom */}
-          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', textAlign: 'center', mt: 2 }}>
+          <Typography variant="caption" color="text.secondary" style={{ display: 'block', textAlign: 'center', marginTop: '16px' }}>
             Try asking "How many rows are in the file?" or "Show me the first 10 records"
           </Typography>
         </>
       )}
-
+      
       {/* Export dialog */}
       <ExportTemplatesDialog
         open={exportDialogOpen}
@@ -529,5 +580,4 @@ function QueryPage() {
   );
 }
 
-// Export the component so it can be imported in App.js
 export default QueryPage;
