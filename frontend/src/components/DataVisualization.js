@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
   PieChart, Pie, Cell, LineChart, Line
@@ -6,85 +7,86 @@ import {
 import { Box, Typography, FormControl, InputLabel, Select, MenuItem, Paper } from '@mui/material';
 
 // purple colours
-const Colours = ['#8884d8', '#82ca9d', '#ffc658', '#ff8042', '#0088FE', '#00C49F'];
+const clrs = ['#8884d8', '#82ca9d', '#ffc658', '#ff8042', '#0088FE', '#00C49F'];
 
-// vizualization component
+//visualization component
 const DataVisualization = ({ results, columns }) => {
-  const [chartType, setChartType] = useState('bar');
-  const [xAxis, setXAxis] = useState('');
-  const [yAxis, setYAxis] = useState(''); 
-  const [chartData, setChartData] = useState([]);
-  const [shouldShowChart, setShouldShowChart] = useState(false);
+const graphType = useState('bar')[0];
+const setGraphType = useState('bar')[1];
+const [xAxis, setXAxis] = useState('');
+const [y_axis, set_y_axis] = useState(''); 
+  const [data, setData] = useState([]);
+  const [showGraph, setShowGraph] = useState(false);
 
 
-
-  // tried using callback but  didn't work
+// tried using callback but  didn't work
   // check if the data is good for charts
   useEffect(() => {
     // check if data present
     if (!results ||results.length === 0||!columns ||columns.length===0) {
-      setShouldShowChart(false);
+      setShowGraph(false);
       return;
     }
     // look for number columns
-    let hasNumbers = false;
+    let gotNums = false;
     for (let i = 0; i < results.length; i++) {
-      let row = results[i];
+      let r = results[i];
       for (let j = 0; j < columns.length; j++) {
-        let col = columns[j];
-        if (!isNaN(row[col]) && row[col] !== null && row[col] !== '') {
-          hasNumbers = true;
+        let c = columns[j];
+        if (!isNaN(r[c]) && r[c] !== null && r[c] !== '') {
+          gotNums = true;
           break;
         }
       }
-      if (hasNumbers) break;
+      if (gotNums) break;
     }
 
     // only show charts for small data with numbers
-    if (results.length <= 10 && hasNumbers) {
-      setShouldShowChart(true);
+    if (results.length <= 10 && gotNums) {
+      setShowGraph(true);
       
-      // TODO: This is a bit messy but it works for now
-      // try to pick some columns for the chart
-      let numColumns = [];
-      let textColumns = [];
-      let row1 = results[0];
-      for (let c = 0; c < columns.length; c++) {
+      // Todo: This is a bit messy but it works for now
+      // pick some columns for the chart
+      let numCols = [];
+      let txtCols = [];
+      let r1 = results[0];
+for (let c = 0; c < columns.length; c++) {
         let colName = columns[c];
         // check if it's a number
-        if (!isNaN(row1[colName]) && row1[colName] !== null) {
-          numColumns.push(colName);
+        if (!isNaN(r1[colName]) && r1[colName] !== null) {
+          numCols.push(colName);
         } else {
-          textColumns.push(colName);
+          txtCols.push(colName);
         }
       }
       
       // pick axes based on what we have
-      if (textColumns.length >= 1) {
-        setXAxis(textColumns[0]);
-        if (numColumns.length >= 1) {
-          setYAxis(numColumns[0]);
+      if (txtCols.length >= 1) {
+        setXAxis(txtCols[0]);
+        if (numCols.length >= 1) {
+          set_y_axis(numCols[0]);
         }
       } else {
         setXAxis('index');
-        if (numColumns.length >= 1) {
-          setYAxis(numColumns[0]);
+        if (numCols.length >= 1) {
+          set_y_axis(numCols[0]);
         }
       }
     } else {
-      setShouldShowChart(false);
+      setShowGraph(false);
     }
   }, [results, columns]);
 
+
   // make the chart data
   useEffect(() => {
-    if (!results || !results.length || !xAxis || !yAxis) {
-      setChartData([]);
+    if (!results || !results.length || !xAxis || !y_axis) {
+      setData([]);
       return;
     }
 
-    // Todo:optimize
-    let newData = [];
+// Todo:optimize
+    let newStuff = [];
     // make data for chart
     for (let i = 0; i < results.length; i++) {
       let row = results[i];
@@ -97,25 +99,26 @@ const DataVisualization = ({ results, columns }) => {
       }
       // kept getting Nan error hence below code added
       let val = 0;
-      if (!isNaN(row[yAxis])) {
-        val = parseFloat(row[yAxis]);
+      if (!isNaN(row[y_axis])) {
+        val = parseFloat(row[y_axis]);
       }
-
-      let dataPoint = {
+      let pt = {
         name: name,
         value: val
       };
-      for (let j = 0; j < columns.length; j++) {
+for (let j = 0; j < columns.length; j++) {
         let col = columns[j];
-        dataPoint[col] = row[col];
+        pt[col] = row[col];
       }
-      newData.push(dataPoint);
+      newStuff.push(pt);
     }
     
-    // limimit number of points
-    setChartData(newData.slice(0, 20));
-  }, [results, columns, xAxis, yAxis]);
-  if (!shouldShowChart) {
+    // limit number of points
+    setData(newStuff.slice(0, 20));
+  }, [results, columns, xAxis, y_axis]);
+  
+  
+  if (!showGraph) {
     return null;
   }
 
@@ -123,19 +126,13 @@ const DataVisualization = ({ results, columns }) => {
 
 
 
-
-
-
-
   // handle changes below
-  function handleChartTypeChange(event) {
-    setChartType(event.target.value);
+  function changeGraphType(event) {
+    setGraphType(event.target.value);
   }
-  function handleXAxisChange(event) {
-    setXAxis(event.target.value);
-  }
-  function handleYAxisChange(event) {
-    setYAxis(event.target.value);
+  function handleXAxisChange(event) {setXAxis(event.target.value);}
+  function changeYAxis(event) {
+    set_y_axis(event.target.value);
   }
 
 
@@ -155,14 +152,14 @@ const DataVisualization = ({ results, columns }) => {
         Data Visualization
       </Typography>
 
-      <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
+<Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
         {/* dropdown for chart type */}
         <FormControl size="small" sx={{ minWidth: 120 }}>
           <InputLabel>Chart Type</InputLabel>
           <Select
-            value={chartType}
+            value={graphType}
             label="Chart Type"
-            onChange={handleChartTypeChange}
+            onChange={changeGraphType}
           >
             <MenuItem value="bar">Bar Chart</MenuItem>
             <MenuItem value="pie">Pie Chart</MenuItem>
@@ -191,9 +188,9 @@ const DataVisualization = ({ results, columns }) => {
         <FormControl size="small" sx={{ minWidth: 150 }}>
           <InputLabel>Y Axis</InputLabel>
           <Select
-            value={yAxis}
+            value={y_axis}
             label="Y Axis"
-            onChange={handleYAxisChange}
+            onChange={changeYAxis}
           >
             {
               columns.map((col, i) => {
@@ -204,50 +201,47 @@ const DataVisualization = ({ results, columns }) => {
         </FormControl>
       </Box>
 
-      {/* chart container */}
-      <Box sx={{ height: 400 }}>
+      <Box sx={{ height: 350, maxWidth: '100%', overflowX: 'auto' }}>
         <ResponsiveContainer width="100%" height="100%">
-          {chartType === 'bar' && (
-            <BarChart data={chartData}>
+          {graphType === 'bar' && (
+            <BarChart data={data}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="name" />
               <YAxis />
               <Tooltip />
               <Legend />
-              <Bar dataKey="value" fill="#8884d8" name={yAxis} />
+              <Bar dataKey="value" fill="#8884d8" name={y_axis} />
             </BarChart>
           )}
 
-          {chartType === 'pie' && (
+          {graphType === 'pie' && (
             <PieChart>
               <Pie
-                data={chartData}
+                data={data}
+                nameKey="name"
+                dataKey="value"
                 cx="50%"
                 cy="50%"
-                labelLine={false}
-                outerRadius={150}
-                fill="#8884d8"
-                dataKey="value"
-                nameKey="name"
-                label={({name, percent}) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                outerRadius={100}
+                label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
               >
-                {chartData.map((entry, i) => (
-                  <Cell key={`cell-${i}`} fill={Colours[i % Colours.length]} />
+                {data.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={clrs[index % clrs.length]} />
                 ))}
               </Pie>
               <Tooltip />
-              <Legend />
+              <Legend/>
             </PieChart>
           )}
 
-          {chartType === 'line' && (
-            <LineChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" />
+          {graphType === 'line' && (
+            <LineChart data={data}> 
+              <CartesianGrid strokeDasharray="3 3" /> 
               <XAxis dataKey="name" />
               <YAxis />
               <Tooltip />
               <Legend />
-              <Line type="monotone" dataKey="value" stroke="#8884d8" name={yAxis} />
+              <Line type="monotone" dataKey="value" stroke="#8884d8" name={y_axis} />
             </LineChart>
           )}
         </ResponsiveContainer>
@@ -255,4 +249,5 @@ const DataVisualization = ({ results, columns }) => {
     </Paper>
   );
 };
+
 export default DataVisualization;
