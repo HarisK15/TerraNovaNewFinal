@@ -126,11 +126,10 @@ def handle_query():
         generated_code = sql_query 
         export_meta = {"is_export": False}
     
-    # maybe better error hadnling here
     if not query_results.get("success", False):
         return jsonify({
             "success": False,
-            "error": err,
+            "error": query_results.get("error", "Unknown error occurred"),
             "query_type": query_type,
             "generated_code": generated_code 
         }), 500

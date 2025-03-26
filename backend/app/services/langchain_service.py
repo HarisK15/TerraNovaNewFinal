@@ -8,15 +8,11 @@ from langchain.chains import LLMChain
 from langchain.schema.runnable import RunnableLambda
 from app.utils.db_handler import get_database_schema
 import logging
-
-
 logging.basicConfig(
     level=logging.DEBUG,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
-
 logger = logging.getLogger(__name__)
-
 
 # both initialized separately incase model needs to be changed later (particularly mistral for the pandas queries)
 def initialize_langchain_service():
@@ -24,6 +20,7 @@ def initialize_langchain_service():
     sql_llm = ChatOllama(model="llama3")
 
     return{"csv":csv_llm, "sql":sql_llm}
+
 
 
 
@@ -112,22 +109,17 @@ def get_pandas_query(user_input, llm_model):
     # Using langchain to connect the prompt engineering with the llm model 
     chain = prompt_template | csv_llm
     llm_response = chain.invoke({"question": user_input})
-
-    #Extract text from AIMessage 
     ai_text = str(llm_response).strip()
-
-    #Apply regex to extract Pandas query
+    #manually get query incase llm fails
     match = re.search(r"df\[[^\]]+\]", ai_text)
-
     if match:
         pandas_query = match.group(0).strip()  
     else:
         pandas_query = ai_text.strip() 
 
-    #Ensure complete expressions are returned
+    # not sure why this sometimes misses bracket but fixing it below
     if not pandas_query.endswith("]"):
         pandas_query += "]" 
-
     return pandas_query
 
 

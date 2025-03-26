@@ -10,9 +10,6 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
-
-
-
 load_dotenv()
 OLLAMA_API_URL = os.getenv('OLLAMA_API_URL', 'http://localhost:11434/api/chat')
 MODEL_NAME = os.getenv('MODEL_NAME', 'llama3')
@@ -20,10 +17,9 @@ MODEL_NAME = os.getenv('MODEL_NAME', 'llama3')
 QUERY_TYPE_SQL = 'sql'
 QUERY_TYPE_PANDAS = 'pandas'
 
-# Generate SQL using Ollama
 def get_sql_query(user_query, schema_info):
-    # Prompt needs to be super specific, following prompt worked better during testing
-    prompt = f"""You're an SQL assistant. Using the following database schema:
+  # Prompt needs to be super specific, following prompt worked better during testing
+  prompt = f"""You're an SQL assistant. Using the following database schema:
 
 {schema_info}
 
@@ -45,71 +41,66 @@ return **only** the SQL query — no explanations, comments, or markdown.
 
 Finally, please generate a valid SQL query to answer this question: "{user_query}"
 """
-    
-    payload = {
-        "model": MODEL_NAME,
-        "messages": [
-            {"role": "user", "content": prompt}
-        ],
-        "stream": False
+  
+    # setup request payload
+  stuff_to_send = {
+    "model": MODEL_NAME,
+    "messages": [
+      {"role": "user", "content": prompt}
+    ],
+    "stream": False
+  }
+  
+  try:
+    res = requests.post(OLLAMA_API_URL, json=stuff_to_send)
+    res.raise_for_status() 
+    data = res.json()
+    query = data.get('message', {}).get('content', '').strip()
+    return {
+      "success": True,
+      "query_type": QUERY_TYPE_SQL,
+      "sql_query": query
     }
-    
-    try:
-        response = requests.post(OLLAMA_API_URL, json=payload)
-        response.raise_for_status() 
-        raw_model_response = response.json()
-        sql_query = raw_model_response.get('message', {}).get('content', '').strip()
-        return {
-            "success": True,
-            "query_type": QUERY_TYPE_SQL,
-            "sql_query": sql_query
-        }
-        
-    except Exception as e:
-        return {
-            "success": False,
-            "error": str(e),
-            "message": "Failed to generate SQL query"
-        }
+  except Exception as e:
+    return {
+      "success": False,
+      "error": str(e),
+      "message": "Failed to generate SQL query"
+    }
 
+# Generate a Pandas query
 def get_pandas_query(user_query, schema_info):
-    """Generate a Pandas query from natural language using Ollama."""
-    export_meta = detect_export_meta(user_query)
-    
-    # try to extract columns from the schema
-    available_columns = []
-    if "Database Schema:" in schema_info:
-        schema_lines = schema_info.split('\n')
-        for line in schema_lines:
-            if "Columns:" in line:
-                columns_part = line.split("Columns:")[1].strip()
-                available_columns = [col.strip() for col in columns_part.split(',')]
-    logger.debug(f"Available columns: {available_columns}")
-    
-    if export_meta.get("is_export", False):
-        mapped = export_meta.get("mapped_columns") or export_meta.get("columns") or []
-        if not mapped:
-            mapped = available_columns
-        # remove duplicates
-        mapped = list(dict.fromkeys(mapped))  
-        export_meta["mapped_columns"] = mapped
-        # Build a column selection statemtn
-        if mapped:
-            column_list = ", ".join([f"'{col}'" for col in mapped])
-            pandas_query = f"df[[col for col in [{column_list}] if col in df.columns]]"
-        else:
-            pandas_query = "df"
+  export_meta = detect_export_meta(user_query)
+  
+  cols = []  
+  if "Database Schema:" in schema_info:
+    lines = schema_info.split('\n')
+    for l in lines:  
+      if "Columns:" in l:
+        cols_part = l.split("Columns:")[1].strip()
+        cols = [c.strip() for c in cols_part.split(',')]  
+  logger.debug(f"Available columns: {cols}")
+  
+  if export_meta.get("is_export", False):
+    mapped = export_meta.get("mapped_columns") or export_meta.get("columns") or []
+    if not mapped:
+      mapped = cols
+    export_meta["mapped_columns"] = mapped
+    if mapped:
+      columnList = ", ".join([f"'{col}'" for col in mapped])  
+      pandas_query = f"df[[col for col in [{columnList}] if col in df.columns]]"
+    else:
+      pandas_query = "df"
 
-        return {
-            "success": True,
-            "query_type": QUERY_TYPE_PANDAS,
-            "pandas_query": pandas_query,
-            "export_meta": export_meta
-        }
-    
-    # otherwise fine tuned prompt
-    # Prompt needs to be extra specific or the model gives weird results hence why its so longer than the prompt for SQL
-    prompt = f"""You are a helpful Python data analysis assistant. Given the following CSV file schema information:
+    return {
+      "success": True,
+      "query_type": QUERY_TYPE_PANDAS,
+      "pandas_query": pandas_query,
+      "export_meta": export_meta
+    }
+  
+    # again needs to be super specific
+  prompt = f"""You are a helpful Python data analysis assistant. Given the following CSV file schema information:
 
 {schema_info}
 
@@ -132,148 +123,133 @@ When generating Pandas queries, please follow these guidelines:
 15. Never use duplicate column names in your result - ensure each column has a unique name
 16. For export requests, filter and select only the requested columns. Ensure the requested columns exist in the DataFrame.
 """
+  
+  if export_meta.get("is_export", False):
+    columnList = ", ".join([f"'{col}'" for col in export_meta["mapped_columns"]])
+    prompt += f"\n\nThis query is an EXPORT request. Generate code that selects these columns: [{columnList}]\n"
+    prompt += f"Your export code MUST check if each column exists before selecting it. Only select columns that exist in the dataframe.\n"
+    prompt += f"For example, use: df[[col for col in [{columnList}] if col in df.columns]]\n"
+  prompt += f"\nGenerate ONLY a single valid Python/Pandas expression to answer this question: \"{user_query}\"\n"
+  prompt += "\nReturn ONLY the final expression without any explanation, comments or markdown formatting."
+  if export_meta.get("is_export", False):
+    prompt += f"\n\nExport Intent Detected: {export_meta.get('format', '')} format, template type: {export_meta.get('template_type', '')}, requested columns: {export_meta.get('columns', [])}, mapped columns: {export_meta.get('mapped_columns', [])}"
+  
+  params = {  
+    "model": MODEL_NAME,
+    "messages": [
+      {"role": "user", "content": prompt}
+    ],
+    "stream": False
+  }
+  
+  try:
+    resp = requests.post(OLLAMA_API_URL, json=params)  
+    resp.raise_for_status() 
+    data = resp.json()
+    pandas_query = data.get('message', {}).get('content', '').strip()
     
-    if export_meta.get("is_export", False):
-        column_list = ", ".join([f"'{col}'" for col in export_meta["mapped_columns"]])
-        prompt += f"\n\nThis query is an EXPORT request. Generate code that selects these columns: [{column_list}]\n"
-        prompt += f"Your export code MUST check if each column exists before selecting it. Only select columns that exist in the dataframe.\n"
-        prompt += f"For example, use: df[[col for col in [{column_list}] if col in df.columns]]\n"
-    
-    prompt += f"\nGenerate ONLY a single valid Python/Pandas expression to answer this question: \"{user_query}\"\n"
-    prompt += "\nReturn ONLY the final expression without any explanation, comments or markdown formatting."
-    
-    if export_meta.get("is_export", False):
-        prompt += f"\n\nExport Intent Detected: {export_meta.get('format', '')} format, template type: {export_meta.get('template_type', '')}, requested columns: {export_meta.get('columns', [])}, mapped columns: {export_meta.get('mapped_columns', [])}"
-    
-    
-    payload = {
-        "model": MODEL_NAME,
-        "messages": [
-            {"role": "user", "content": prompt}
-        ],
-        "stream": False
+    return {
+      "success": True,
+      "query_type": QUERY_TYPE_PANDAS,
+      "pandas_query": pandas_query
     }
-    
-    try:
-        # make api call to ollama
-        response = requests.post(OLLAMA_API_URL, json=payload)
-        response.raise_for_status() 
-        raw_model_response = response.json()
-        
-        # Extract the generated Pandas query from the chat API response
-        pandas_query = raw_model_response.get('message', {}).get('content', '').strip()
-        
-        return {
-            "success": True,
-            "query_type": QUERY_TYPE_PANDAS,
-            "pandas_query": pandas_query
-        }
-        
-    except Exception as e:
-        return {
-            "success": False,
-            "error": str(e),
-            "message": "Failed to generate Pandas query"
-        }
+  except Exception as e:
+    return {
+      "success": False,
+      "error": str(e),
+      "message": "Failed to generate Pandas query"
+    }
 
-# added for templates feature, although templates not fully implemented so can be simplified
 def detect_export_meta(user_query):
-    user_query_lower = user_query.lower()
-    
-    # Check for export intent keywords
-    export_keywords = ["export", "download", "save", "extract", "output", "create"]
-    has_export_meta = any(keyword in user_query_lower for keyword in export_keywords)
-    
-    if not has_export_meta:
-        return {"is_export": False}
-    
-    # Detect format
-    formats = {
-        "csv": ["csv", "comma separated"],
-        "excel": ["excel", "xlsx", "spreadsheet", "report"],
-        "json": ["json", "javascript object"]
-    }
-    
-    detected_format = None
-    for format_name, format_keywords in formats.items():
-        if any(keyword in user_query_lower for keyword in format_keywords):
-            detected_format = format_name
-            break
-    
-    # Detect template type
-    template_type = "basic"
-    if "report" in user_query_lower or "summary" in user_query_lower:
-        template_type = "report"
-    elif "nested" in user_query_lower or "metadata" in user_query_lower:
-        template_type = "nested"
-    
-    # Extract relevant column names 
-    common_prefixes = [
-        "customer_", "order_", "product_", "seller_", "item_"
-    ]
-    potential_columns = []
-    col_pattern = r'(customer_\w+|order_\w+|product_\w+|seller_\w+|item_\w+)'
-    col_matches = re.findall(col_pattern, user_query_lower)
-    potential_columns.extend(col_matches)
-    
-    # very specific for df_customers file; check for words like "id", "state", "city", etc.
-    column_keywords = ["id", "state", "city", "zip", "code", "prefix", "name", "price", "amount"]
-    for keyword in column_keywords:
-        if keyword in user_query_lower and not any(f"_{keyword}" in col for col in potential_columns):
-            for prefix in ["customer", "order", "product", "seller", "item"]:
-                if prefix in user_query_lower and f"{prefix}_{keyword}" not in potential_columns:
-                    potential_columns.append(f"{prefix}_{keyword}")
-    
-    # If in query other columns names mentioned, use them otherwise default to all available columns 
-    identified_columns = []
-    if potential_columns:
-        # get most relevant column name first
-        for col in potential_columns:
-            clean_col = col.rstrip('.,;:!?')
-            identified_columns.append(clean_col)
-        columns = list(set(identified_columns))
-    columns.sort(key=len, reverse=True)
-    export_meta = {
-        "is_export": True,
-        "format": detected_format,
-        "template_type": template_type,
-        "columns": columns,
-        "mapped_columns": []
-    }
-    return export_meta
+  q = user_query.lower()  
 
+  # Check for export intent keywords
+  export_keywords = ["export", "download", "save", "extract", "output", "create"]
+  has_export_meta = any(keyword in q for keyword in export_keywords)
+  if not has_export_meta:
+    return {"is_export": False}
+  
+  # Detect format
+  formats = {
+    "csv": ["csv", "comma separated"],
+    "excel": ["excel", "xlsx", "spreadsheet", "report"],
+    "json": ["json", "javascript object"]
+  }
+  
+  detected_format = None
+  for format_name, format_keywords in formats.items():
+    if any(keyword in q for keyword in format_keywords):
+      detected_format = format_name
+      break
+  
+    # Detect template type
+  template_type = "basic"
+  if "report" in q or "summary" in q:
+    template_type = "report"
+  elif "nested" in q or "metadata" in q:
+    template_type = "nested"
+  
+  common_prefixes = [
+    "customer_", "order_", "product_", "seller_", "item_"
+  ]
+  potential_columns = []
+  col_pattern = r'(customer_\w+|order_\w+|product_\w+|seller_\w+|item_\w+)'
+  col_matches = re.findall(col_pattern, q)
+  potential_columns.extend(col_matches)
+  
+    # very specific for df_customers file; check for words like "id", "state", "city", etc.
+  column_keywords = ["id", "state", "city", "zip", "code", "prefix", "name", "price", "amount"]
+  for keyword in column_keywords:
+    if keyword in q and not any(f"_{keyword}" in col for col in potential_columns):
+      for prefix in ["customer", "order", "product", "seller", "item"]:
+        if prefix in q and f"{prefix}_{keyword}" not in potential_columns:
+          potential_columns.append(f"{prefix}_{keyword}")
+  
+  identified_columns = []
+  if potential_columns:
+    for col in potential_columns:
+      clean_col = col.rstrip('.,;:!?')
+      identified_columns.append(clean_col)
+    columns = list(set(identified_columns))
+  columns.sort(key=len, reverse=True)
+  export_meta = {
+    "is_export": True,
+    "format": detected_format,
+    "template_type": template_type,
+    "columns": columns,
+    "mapped_columns": []
+  }
+  return export_meta
+
+# Generate a natural language explanation of the query results
 def explain_query_results(results, user_query):
-    """Generate a natural language explanation of the query results."""
-    prompt = f"""Based on the following query results for the question "{user_query}":
+  prompt = f"""Based on the following query results for the question "{user_query}":
 
 {results}
 
 Provide a clear, concise explanation of what these results mean in plain English. Focus only on the key insights, facts, and patterns within the data. Keep your response direct, factual, and avoid showing your thinking process or mentioning the SQL query. Make it sound like a direct answer to the user's question in a conversational tone, under 3-4 sentences if possible.
 """
-    
-    payload = {
-        "model": MODEL_NAME,
-        "messages": [
-            {"role": "user", "content": prompt}
-        ],
-        "stream": False
+  
+  req_data = {  
+    "model": MODEL_NAME,
+    "messages": [
+      {"role": "user", "content": prompt}
+    ],
+    "stream": False
+  }
+  
+  try:
+    resp = requests.post(OLLAMA_API_URL, json=req_data)
+    resp.raise_for_status()
+    raw_response = resp.json()
+    explanation = raw_response.get('message', {}).get('content', '').strip()
+    return {
+      "success": True,
+      "explanation": explanation
     }
-    
-    try:
-        response = requests.post(OLLAMA_API_URL, json=payload)
-        response.raise_for_status()
-        raw_model_response = response.json()
-        explanation = raw_model_response.get('message', {}).get('content', '').strip()
-        
-        return {
-            "success": True,
-            "explanation": explanation
-        }
-        
-    except Exception as e:
-        logger.error(f"Error generating Explanation: {str(e)}")
-        # fallback; basic message if explanation fails
-        return {
-            "success": False,
-            "explanation": f"Results for your query: '{user_query}'"
-        }
+  except Exception as e:
+    logger.error(f"Error generating Explanation: {str(e)}")
+    return {
+      "success": False,
+      "explanation": f"Results for your query: '{user_query}'"
+    }
