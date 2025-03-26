@@ -2,7 +2,7 @@ import os
 import sys  
 from flask import Blueprint, request, jsonify
 import logging
-from app.services.ollama_service import get_sql_query, get_pandas_query, explain_query_results, detect_export_meta, QUERY_TYPE_PANDAS
+from app.services.ollama_service import get_sql_query, get_pandas_query, explain_query_results, QUERY_TYPE_PANDAS
 from app.utils.db_handler import get_database_schema, format_schema_for_prompt, execute_query, execute_pandas_query, format_results
 import numpy as np  
 
@@ -109,13 +109,11 @@ def handle_query():
         pandas_query = query_result.get("pandas_query")
         query_results = execute_pandas_query(filepath, pandas_query)
         generated_code = pandas_query 
-        export_meta = detect_export_meta(user_query)
     else:
         sql_query = query_result.get("sql_query")
         print(f"Running SQL: {sql_query}")
         query_results = execute_query(filepath, sql_query)
         generated_code = sql_query 
-        export_meta = {"is_export": False}
     
     if not query_results.get("success", False):
         return jsonify({
@@ -133,8 +131,4 @@ def handle_query():
         "columns": query_results.get("columns"),
     }
     
-    if query_type == "pandas" and export_meta.get("is_export"):
-        response_data["export_meta"] = export_meta
-        response_data["export_format"] = export_meta.get("format")
-        response_data["export_template_type"] = export_meta.get("template_type")
     return jsonify(response_data), 200

@@ -69,7 +69,8 @@ Finally, please generate a valid SQL query to answer this question: "{user_query
     }
 
 def get_pandas_query(user_query, schema_info):
-  export_meta = detect_export_meta(user_query)
+  # Always set is_export to False since we're removing export intent detection
+  export_meta = {"is_export": False}
   
   cols = []  
   if "Database Schema:" in schema_info:
@@ -80,26 +81,9 @@ def get_pandas_query(user_query, schema_info):
         cols = [c.strip() for c in cols_part.split(',')]  
   logger.debug(f"Available columns: {cols}")
   
-  if export_meta.get("is_export", False):
-    mapped = export_meta.get("mapped_columns") or export_meta.get("columns") or []
-    if not mapped:
-      mapped = cols
-    export_meta["mapped_columns"] = mapped
-    if mapped:
-      columnList = ", ".join([f"'{col}'" for col in mapped])  
-      pandas_query = f"df[[col for col in [{columnList}] if col in df.columns]]"
-    else:
-      pandas_query = "df"
+  prompt = f"""You are a data query assistant that helps translate natural language questions into Pandas code.
 
-    return {
-      "success": True,
-      "query_type": QUERY_TYPE_PANDAS,
-      "pandas_query": pandas_query,
-      "export_meta": export_meta
-    }
-  
-    # again needs to be super specific
-  prompt = f"""You are a helpful Python data analysis assistant. Given the following CSV file schema information:
+Given the following CSV file schema information:
 
 {schema_info}
 
@@ -120,18 +104,10 @@ When generating Pandas queries, please follow these guidelines:
 14. When creating frequency counts, use this exact pattern for every data analysis task:
     df['column_name'].value_counts().reset_index().rename(columns={{'index': 'column_display_name', 'column_name': 'count'}}).head(N)
 15. Never use duplicate column names in your result - ensure each column has a unique name
-16. For export requests, filter and select only the requested columns. Ensure the requested columns exist in the DataFrame.
+
+Generate ONLY a single valid Python/Pandas expression to answer this question: \"{user_query}\"\n
+Return ONLY the final expression without any explanation, comments or markdown formatting.
 """
-  
-  if export_meta.get("is_export", False):
-    columnList = ", ".join([f"'{col}'" for col in export_meta["mapped_columns"]])
-    prompt += f"\n\nThis query is an EXPORT request. Generate code that selects these columns: [{columnList}]\n"
-    prompt += f"Your export code MUST check if each column exists before selecting it. Only select columns that exist in the dataframe.\n"
-    prompt += f"For example, use: df[[col for col in [{columnList}] if col in df.columns]]\n"
-  prompt += f"\nGenerate ONLY a single valid Python/Pandas expression to answer this question: \"{user_query}\"\n"
-  prompt += "\nReturn ONLY the final expression without any explanation, comments or markdown formatting."
-  if export_meta.get("is_export", False):
-    prompt += f"\n\nExport Intent Detected: {export_meta.get('format', '')} format, template type: {export_meta.get('template_type', '')}, requested columns: {export_meta.get('columns', [])}, mapped columns: {export_meta.get('mapped_columns', [])}"
   
   params = {  
     "model": MODEL_NAME,
@@ -150,74 +126,16 @@ When generating Pandas queries, please follow these guidelines:
     return {
       "success": True,
       "query_type": QUERY_TYPE_PANDAS,
-      "pandas_query": pandas_query
+      "pandas_query": pandas_query,
+      "export_meta": export_meta
     }
   except Exception as e:
     return {
       "success": False,
       "error": str(e),
-      "message": "Failed to generate Pandas query"
+      "message": "Failed to generate Pandas query",
+      "export_meta": {"is_export": False}
     }
-
-def detect_export_meta(user_query):
-  q = user_query.lower()  
-
-  # Check for export intent keywords
-  export_keywords = ["export", "download", "save", "extract", "output", "create"]
-  has_export_meta = any(keyword in q for keyword in export_keywords)
-  if not has_export_meta:
-    return {"is_export": False}
-  
-  # Detect format
-  formats = {
-    "csv": ["csv", "comma separated"],
-    "excel": ["excel", "xlsx", "spreadsheet", "report"],
-    "json": ["json", "javascript object"]
-  }
-  
-  detected_format = None
-  for format_name, format_keywords in formats.items():
-    if any(keyword in q for keyword in format_keywords):
-      detected_format = format_name
-      break
-  
-  template_type = "basic"
-  if "report" in q or "summary" in q:
-    template_type = "report"
-  elif "nested" in q or "metadata" in q:
-    template_type = "nested"
-  
-  common_prefixes = [
-    "customer_", "order_", "product_", "seller_", "item_"
-  ]
-  potential_columns = []
-  col_pattern = r'(customer_\w+|order_\w+|product_\w+|seller_\w+|item_\w+)'
-  col_matches = re.findall(col_pattern, q)
-  potential_columns.extend(col_matches)
-  
-    # specific to df_customers file; check for words like "id", "state", "city", etc.
-  column_keywords = ["id", "state", "city", "zip", "code", "prefix", "name", "price", "amount"]
-  for keyword in column_keywords:
-    if keyword in q and not any(f"_{keyword}" in col for col in potential_columns):
-      for prefix in ["customer", "order", "product", "seller", "item"]:
-        if prefix in q and f"{prefix}_{keyword}" not in potential_columns:
-          potential_columns.append(f"{prefix}_{keyword}")
-  
-  identified_columns = []
-  if potential_columns:
-    for col in potential_columns:
-      clean_col = col.rstrip('.,;:!?')
-      identified_columns.append(clean_col)
-    columns = list(set(identified_columns))
-  columns.sort(key=len, reverse=True)
-  export_meta = {
-    "is_export": True,
-    "format": detected_format,
-    "template_type": template_type,
-    "columns": columns,
-    "mapped_columns": []
-  }
-  return export_meta
 
 # Generate a natural language explanation 
 def explain_query_results(results, user_query):

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Dialog, DialogTitle, DialogContent, DialogActions, 
-  Button, Typography, Tabs, Tab, List, ListItem, 
+  Button, Typography, List, ListItem, 
   ListItemButton, ListItemText, Box, Divider, Chip,
   TextField, Switch, FormControlLabel, FormControl,
   InputLabel, Select, MenuItem, 
@@ -14,24 +14,39 @@ import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
 import InsightsIcon from '@mui/icons-material/Insights';
 import CategoryIcon from '@mui/icons-material/Category';
 import DownloadIcon from '@mui/icons-material/Download';
-import { exportTemplates, getTemplatesByFormat, getTemplatesByCategory, getTemplatesByFormatAndCategory, getCategories } from '../utils/exportTemplates';
+import { exportTemplates } from '../utils/exportTemplates';
 import { processAndExport } from '../utils/templateProcessor';
 import { getFormatIcon } from '../utils/formatIcons';
 
 // own function due to inline not working
-function getCategoryIcon(category) {
+function get_cat_icon(category) {
+  // TODO: rewrite this using a switch statment?? 
+  let icon_type = null;
+  
   if (category === 'financial') {
-    return <AttachMoneyIcon />;
+    //console.log('financial icon loaded')
+    icon_type = <AttachMoneyIcon />;
+    return icon_type;
   } else if (category === 'analysis') {
+    // todo: use different icon
     return <InsightsIcon />;
   } else if (category === 'visualization') {
-    return <BarChartIcon />;
+    //this one looks bad on dark theme
+    let vizIcon = <BarChartIcon />; 
+    // console.log(category, vizIcon)
+    return vizIcon
   } else if (category === 'general') {
     return <CategoryIcon />;
   } else {
     // Default icon - should add more icons later
+    // TODO: add more icons for: reporting, data, etc.
     return <CategoryIcon />;
   }
+}
+
+// refactor
+function getCategoryIcon(cat) {
+  return get_cat_icon(cat);
 }
 
 // Dialog for picking export templates
@@ -46,16 +61,16 @@ const ExportTemplatesDialog = (props) => {
   
   const [currTemplate, setcurrTemplate] = useState(null);
   const [currFormat, setcurrFormat] = useState(null);
-  const [selectedCategory, setSelectedCategory] = useState(null);
   const [myConfig, setmyConfig] = useState({});
   const [customFilename, setCustomFilename] = useState('');
-  const [tabValue, setTabValue] = useState('format');
   // Todo: dark mode
   // not implemented yet
   const [isDarkMode, setIsDarkMode] = useState(false); 
+  const [dialogOpen, setDialogOpen] = useState(open); 
   
   // auto-select format if provided
   useEffect(() => {
+    // old way of doing it but it works
     if (open && exportFormat) {
       setcurrFormat(exportFormat.toLowerCase());
       
@@ -81,24 +96,28 @@ const ExportTemplatesDialog = (props) => {
     templatesByFormat[fmt].push(tmpl);
   }
   
-  // Tried to use .reduce but couldn't get it to work
-  let templatesByCategory = {};
-  exportTemplates.forEach(tmpl => {
-    if (!templatesByCategory[tmpl.category]) {
-      templatesByCategory[tmpl.category] = [];
-    }
-    templatesByCategory[tmpl.category].push(tmpl);
-  });
-  
   // Select a template
-  function handleTemplateSelect(tmpl) {
+  function pickTemplate(tmpl) {
     setcurrTemplate(tmpl);
-    setmyConfig({});
+      setmyConfig({});
     setCustomFilename('');
+    //Todo: add beter error handling for template selection
     console.log('template:' + tmpl.name);
+    
+    // not implemented yet
+    // let recents = localStorage.getItem('recent_templates') || '[]';
+    // try {
+    //   let recentsArray = JSON.parse(recents);
+    //   recentsArray = [tmpl.id, ...recentsArray.filter(id => id !== tmpl.id)].slice(0, 5);
+    //   localStorage.setItem('recent_templates', JSON.stringify(recentsArray));
+    // } catch (e) {
+    //   console.error('Failed to update recent templates');
+    // }
+  
   }
   
   function doExport() {
+    // TOdO: implement support for additional formats
     let configToUse = { ...myConfig };
     if (customFilename) {
       configToUse.customFilename = customFilename;
@@ -112,7 +131,7 @@ const ExportTemplatesDialog = (props) => {
       );
       
       console.log('Export worked!');
-    handleClose();
+      handleClose();
   }
 
   const testTemplate = () => {
@@ -135,113 +154,75 @@ const ExportTemplatesDialog = (props) => {
         <div style={{ display: 'flex', height: '400px' }}>
           {/* Left side */}
           <div style={{ width: '35%', borderRight: '1px solid #eee', paddingRight: '16px', overflowY: 'auto' }}>
-            <Tabs value={tabValue} onChange={(event, newValue) => {
-              setTabValue(newValue);
-            }}>
-              <Tab label="By Format" value="format" />
-              <Tab label="By Category" value="category" />
-            </Tabs>
+            <Typography variant="subtitle1" style={{ marginTop: '16px', marginBottom: '8px', fontWeight: 'bold' }}>
+              Export Format
+            </Typography>
             
-            {/* Format tab */}
-            {tabValue === 'format' && (
+            <List>
+              {Object.keys(templatesByFormat).map((fmt) => (
+                <ListItem key={fmt} disablePadding>
+                  <ListItemButton 
+                    selected={currFormat === fmt}
+                    onClick={() => {
+                      setcurrFormat(fmt);
+                      setcurrTemplate(templatesByFormat[fmt][0]);
+                      setmyConfig({});
+                      console.log(currFormat)
+                      // for (let t of templatesByFormat[fmt]) {
+                      //   console.log(t.id, t.name);
+                      // }
+                    }}
+                    style={{marginBottom: '4px'}}
+                  >
+                    {getFormatIcon(fmt)}
+                    <ListItemText primary={fmt.toUpperCase()} style={{marginLeft: '8px'}} />
+                  </ListItemButton>
+                </ListItem>
+              ))}
+            </List>
+            
+            {currFormat && (
               <div>
-                <Typography variant="subtitle1" style={{ marginTop: '16px', marginBottom: '8px', fontWeight: 'bold' }}>
-                  Export Format
+                <Divider style={{margin: '16px 0'}} />
+                
+                <Typography variant="subtitle1" style={{marginBottom: '8px', fontWeight: 'bold'}}>
+                  {currFormat.toUpperCase()} Templates
                 </Typography>
                 
                 <List>
-                  {Object.keys(templatesByFormat).map((fmt) => (
-                    <ListItem key={fmt} disablePadding>
-                      <ListItemButton 
-                        selected={currFormat === fmt}
-                        onClick={() => {
-                          setcurrFormat(fmt);
-                          setcurrTemplate(templatesByFormat[fmt][0]);
-                          setmyConfig({});
-                        }}
-                        style={{marginBottom: '4px'}}
+                  {templatesByFormat[currFormat].map((tmpl) => (
+                    <ListItem key={tmpl.id} disablePadding>
+                      <ListItemButton
+                        selected={currTemplate && currTemplate.id === tmpl.id}
+                        onClick={() => pickTemplate(tmpl)}
                       >
-                        {getFormatIcon(fmt)}
-                        <ListItemText primary={fmt.toUpperCase()} style={{marginLeft: '8px'}} />
+                        <div>
+                          <div>{tmpl.name}</div>
+                          <div style={{fontSize: '0.8rem', color: '#666'}}>{tmpl.description}</div>
+                        </div>
+                        <Chip 
+                          label={tmpl.category} 
+                          size="small" 
+                          style={{marginLeft: '8px'}}
+                          icon={getCategoryIcon(tmpl.category)}
+                        />
                       </ListItemButton>
                     </ListItem>
                   ))}
                 </List>
-                
-                {currFormat && (
-                  <div>
-                    <Divider style={{margin: '16px 0'}} />
-                    
-                    <Typography variant="subtitle1" style={{marginBottom: '8px', fontWeight: 'bold'}}>
-                      {currFormat.toUpperCase()} Templates
-                    </Typography>
-                    
-                    <List>
-                      {templatesByFormat[currFormat].map((tmpl) => (
-                        <ListItem key={tmpl.id} disablePadding>
-                          <ListItemButton
-                            selected={currTemplate && currTemplate.id === tmpl.id}
-                            onClick={() => handleTemplateSelect(tmpl)}
-                          >
-                            <div>
-                              <div>{tmpl.name}</div>
-                              <div style={{fontSize: '0.8rem', color: '#666'}}>{tmpl.description}</div>
-                            </div>
-                            <Chip 
-                              label={tmpl.category} 
-                              size="small" 
-                              style={{marginLeft: '8px'}}
-                              icon={getCategoryIcon(tmpl.category)}
-                            />
-                          </ListItemButton>
-                        </ListItem>
-                      ))}
-                    </List>
-                  </div>
-                )}
-              </div>
-            )}
-            
-            {/* Category tab */}
-            {tabValue === 'category' && (
-              <div>
-                <Typography variant="subtitle1" style={{marginTop: '16px', marginBottom: '8px', fontWeight: 'bold'}}>
-                  Template Category
-                </Typography>
-                
-                <Typography variant="body2" style={{marginTop: '16px', color: '#666'}}>
-                  Category filtering still in development
-                </Typography>
-                
-                {/* Todo: uncomment when working working 
-                <div>
-                  {Object.keys(templatesByCategory).map((category) => (
-                    <div key={category}>
-                      <h4>{category}</h4>
-                      <ul>
-                        {templatesByCategory[category].map(tmpl => (
-                          <li key={tmpl.id} onClick={() => handleTemplateSelect(tmpl)}>
-                            {tmpl.name}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  ))}
-                </div>
-                */}
               </div>
             )}
           </div>
           
           {/* Right side */}
-          <div style={{width: '65%', paddingLeft: '16px', overflow: 'auto'}}>
+          <div style={{ width: '65%', padding: '0 0 0 16px', overflowY: 'auto' }}>
             {currTemplate ? (
-              <div>
-                <Typography variant="h6">
+              <div className="template-details">
+                {/* Todo: maybe add preview of export here */}
+                <Typography variant="h6" style={{marginTop: '8px'}}>
                   {currTemplate.name}
                 </Typography>
-                
-                <Typography variant="body2" style={{marginTop: '8px', marginBottom: '16px', color: '#666'}}>
+                <Typography variant="body2" style={{marginBottom: '16px', color: '#666'}}>
                   {currTemplate.description}
                 </Typography>
                 
@@ -266,6 +247,7 @@ const ExportTemplatesDialog = (props) => {
                 {/* Template-specific options */}
                 {currTemplate.config && Object.keys(currTemplate.config).map((optKey) => {
                   const opt = currTemplate.config[optKey];
+                  const val = opt; 
                   
                   if (opt.type === 'boolean') {
                     return (
@@ -289,12 +271,12 @@ const ExportTemplatesDialog = (props) => {
                       <div key={optKey} style={{marginBottom: '16px'}}>
                         <InputLabel>{opt.label || optKey}</InputLabel>
                         <Select
-                          value={myConfig[optKey] || opt.default || ''}
-                          onChange={(e) => {
+                           value={myConfig[optKey] || opt.default || ''}
+                           onChange={(e) => {
                               let newConfig = { ...myConfig };
                               newConfig[optKey] = e.target.value;
                               setmyConfig(newConfig);
-                          }}
+                           }}
                           label={opt.label || optKey}
                           fullWidth
                           size="small"
@@ -354,9 +336,13 @@ const ExportTemplatesDialog = (props) => {
           Cancel
         </Button>
         <Button 
-          onClick={doExport} 
+          onClick={(e) => {
+            doExport();
+            // handleClose();
+          }}
           variant="contained" 
           disabled={!currTemplate}
+          style={{ backgroundColor: "#1976d2" }}
         >
           Export <DownloadIcon style={{marginLeft: '8px'}} />
         </Button>
@@ -365,6 +351,5 @@ const ExportTemplatesDialog = (props) => {
   );
 };
 export default ExportTemplatesDialog;
-
 
 // fix stack error when on page for too long

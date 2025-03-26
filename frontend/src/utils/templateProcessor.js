@@ -16,67 +16,31 @@ export const processTransformation = (templateId, data, columns, config = {}) =>
   // console.log('Data sample:', data.slice(0, 2));
   const { category, type } = config;
   
-  // Statistical Summary - calculate statistics for numeric columns - still not working
+  // Statistical Summary - calculate statistics for numeric columns
   if (category === 'analysis' && templateId === 'analysis-statistical-summary') {
-    let num_cols = [];
-    for (let col of columns) {
-      let hasNumbers = false;
-      for (let row of data) {
-        if (typeof row[col] === 'number' || !isNaN(parseFloat(row[col]))) {
-          hasNumbers = true;
-          break;
-        }
-      }
-      if (hasNumbers) {
-        num_cols.push(col);
-      }
-    }
-    
+    let num_cols = findNumericColumns(data, columns);
     console.log('Found columns->', num_cols);
     
     // For each numeric column, calculate stats
     let summaryData = [
       ['Column', 'Count', 'Min', 'Max', 'Sum', 'Average', 'Std Dev']
     ];
+    
     for (let col of num_cols) {
-      let vals = [];
-      data.forEach(function(row) {
-        let v = row[col];
-        if (typeof v === 'number') {
-          vals.push(v);
-        } else if (typeof v === 'string' && !isNaN(parseFloat(v))) {
-          vals.push(parseFloat(v));
-        }
-      });
-      
-      if (vals.length === 0) continue;
-      
-      // Calculate basic stats
-      let count = vals.length;
-      let min = Math.min(...vals);
-      let max = Math.max(...vals);
-      let sum = 0;
-      for (let val of vals) {
-        sum += val;
+      let values = getNumericValues(data, col);
+      let stats = calculateStats(values);
+      if (stats) {
+        summaryData.push([
+          col,
+          stats.count,
+          stats.min,
+          stats.max,
+          stats.sum,
+          stats.avg,
+          stats.stdDev
+        ]);
+        console.log('Sum for' + col + 'in statistical summary' + stats.sum);
       }
-      let avg = sum / count;
-      
-      // Calculate s.d
-      let sqDiffs = 0;
-      for (let val of vals) {
-        sqDiffs += Math.pow(val - avg, 2);
-      }
-      let stdDev = Math.sqrt(sqDiffs / count);
-      summaryData.push([
-        col,
-        count,
-        min,
-        max,
-        sum,
-        avg,
-        stdDev
-      ]);
-      console.log('Sum for' + col + 'in statistical summary' + sum);
     }
     
     return { summaryData };
@@ -85,57 +49,15 @@ export const processTransformation = (templateId, data, columns, config = {}) =>
   // Category Analysis - group by category and calculate sums/averages
   else if (category === 'analysis' && templateId === 'analysis-category-grouping') {
     // Try to find a category column
-    let categoryCol = null;
-    for (let col of columns) {
-      if (col.toLowerCase().includes('category') || 
-          col.toLowerCase().includes('type') || 
-          col.toLowerCase().includes('group')) {
-        categoryCol = col;
-        break;
-      }
-    }
-    
-    // also check for these other potential category columns
-    // if (!categoryCol) {
-    //   for (let col of columns) {
-    //     if (col.toLowerCase().includes('class') || 
-    //         col.toLowerCase().includes('segment') || 
-    //         col.toLowerCase().includes('section')) {
-    //       categoryCol = col;
-    //       break;
-    //     }
-    //   }
-    // }
+    let categoryCol = findColumnByPattern(columns, ['category', 'type', 'group']);
     
     if (categoryCol) {
       console.log(' found column for categories:', categoryCol);
       
-      let numericColumns = [];
-      for (let col of columns) {
-        if (col !== categoryCol) {
-          let hasNumbers = false;
-          for (let row of data) {
-            if (typeof row[col] === 'number' || !isNaN(parseFloat(row[col]))) {
-              hasNumbers = true;
-              break;
-            }
-          }
-          if (hasNumbers) {
-            numericColumns.push(col);
-          }
-        }
-      }
+      let numericColumns = findNumericColumns(data, columns);
       
-      // most code below doesnt work fully yet
       // Get all unique categories
-      let cats = [];
-      // fix ESLint error here
-      const results = data; 
-      results.forEach(r => {
-        if (!cats.includes(r[columns[0]])) {
-          cats.push(r[columns[0]]);
-        }
-      });
+      let cats = getUniq(data.map(r => r[categoryCol]));
       
       let catData = [
         ['Category', 'Count', ...numericColumns.map(col => `Sum of ${col}`), 
@@ -143,31 +65,24 @@ export const processTransformation = (templateId, data, columns, config = {}) =>
       ];
       
       for (let cat of cats) {
-        let catRows = results.filter(row => row[columns[0]] === cat);
+        let catRows = data.filter(row => row[categoryCol] === cat);
         let count = catRows.length;
         let row = [cat, count];
+        
+        // Add sums for each numeric column
         numericColumns.forEach(col => {
-          // this is faster than using reduce I think
-          var s = 0;
-          for (var j = 0; j < catRows.length; j++) {
-            let v = catRows[j][col];
-            if (typeof v === 'number') s += v;
-            else if (!isNaN(parseFloat(v))) s += parseFloat(v);
-          }
-          row.push(s);
+          const values = getNumericValues(catRows, col);
+          const sum = values.reduce((a, b) => a + b, 0);
+          row.push(sum);
         });
-        for (let col of numericColumns) {
-          let sum = 0;
-          for (let dataRow of catRows) {
-            let val = dataRow[col];
-            if (typeof val === 'number') {
-              sum += val;
-            } else if (typeof val === 'string' && !isNaN(parseFloat(val))) {
-              sum += parseFloat(val);
-            }
-          }
-          row.push(sum / count);
-        }
+        
+        // Add averages for each numeric column
+        numericColumns.forEach(col => {
+          const values = getNumericValues(catRows, col);
+          const avg = values.length > 0 ? values.reduce((a, b) => a + b, 0) / values.length : 0;
+          row.push(avg);
+        });
+        
         catData.push(row);
       }
       
@@ -182,95 +97,62 @@ export const processTransformation = (templateId, data, columns, config = {}) =>
     }
   }
   
-  // Todo: implement histogram   
   // Periods/Quarterly Analysis
   else if (category === 'financial' && templateId === 'finance-quarterly-report') {
-    // still buggy  
-    let dateCol = null;
-    for (let col of columns) {
-      if (col.toLowerCase().includes('date') || 
-          col.toLowerCase().includes('period') || 
-          col.toLowerCase().includes('quarter')) {
-        dateCol = col;
-        break;
-      }
-    }
-    let amountCol = null;
-    for (let col of columns) {
-      if (col.toLowerCase().includes('amount') || 
-          col.toLowerCase().includes('value') || 
-          col.toLowerCase().includes('revenue') ||
-          col.toLowerCase().includes('expense')) {
-        amountCol = col;
-        break;
-      }
-    }
+    // Find relevant columns
+    let dateCol = findColumnByPattern(columns, ['date', 'period', 'quarter']);
+    let amountCol = findColumnByPattern(columns, ['amount', 'value', 'total', 'sum', 'revenue', 'expense']);
+    let typeCol = findColumnByPattern(columns, ['type', 'category', 'segment', 'class']);
     
-    if (dateCol && amountCol) {
-      let typeCol = null;
-      for (let col of columns) {
-        if (col !== dateCol && col !== amountCol &&
-           col.toLowerCase().includes('type')) {
-          typeCol = col;
-          break;
+    if (dateCol && amountCol && typeCol) {
+      let periods = getUniq(data.map(r => r[dateCol]));
+      let types = getUniq(data.map(r => r[typeCol]));
+      
+      // Create quarterly data structure
+      let periodData = [
+        ['Period', ...types, 'Total']
+      ];
+      
+      // Process each period
+      for (let period of periods) {
+        let periodRows = data.filter(row => row[dateCol] === period);
+        let row = [period];
+        let periodTotal = 0;
+        
+        // Process each type
+        for (let type of types) {
+          let typeRows = periodRows.filter(row => row[typeCol] === type);
+          const typeValues = typeRows.map(row => {
+            const val = row[amountCol];
+            return typeof val === 'number' ? val : 
+                  (typeof val === 'string' && !isNaN(parseFloat(val)) ? parseFloat(val) : 0);
+          });
+          
+          const typeTotal = typeValues.reduce((a, b) => a + b, 0);
+          row.push(typeTotal);
+          periodTotal += typeTotal;
         }
+        row.push(periodTotal);
+        periodData.push(row);
       }
       
-      if (typeCol) {
-        let periods = [];
-        for (let row of data) {
-          if (!periods.includes(row[dateCol])) {
-            periods.push(row[dateCol]);
-          }
+      // Create totals row
+      let totalsRow = ['Total'];
+      let grandTotal = 0;
+      
+      for (let i = 0; i < types.length; i++) {
+        let typeTotal = 0;
+        for (let j = 1; j < periodData.length; j++) {
+          typeTotal += periodData[j][i + 1] || 0;
         }
-        
-        let types = [];
-        for (let row of data) {
-          if (!types.includes(row[typeCol])) {
-            types.push(row[typeCol]);
-          }
-        }
-        
-        let periodData = [
-          ['Period', ...types, 'Total']
-        ];
-        
-        for (let period of periods) {
-          let periodRows = data.filter(row => row[dateCol] === period);
-          let row = [period];
-          let periodTotal = 0;
-          
-          for (let type of types) {
-            let typeRows = periodRows.filter(row => row[typeCol] === type);
-            let typeSum = 0;
-        
-            for (let dataRow of typeRows) {
-              let val = dataRow[amountCol];
-              if (typeof val === 'number') {
-                typeSum += val;
-              } else if (typeof val === 'string' && !isNaN(parseFloat(val))) {
-                typeSum += parseFloat(val);
-              }
-            }
-            row.push(typeSum);
-            periodTotal += typeSum;
-          }
-          row.push(periodTotal);
-          periodData.push(row);
-        }
-        
-        let totalRow = ['Total'];
-        for (let i = 1; i < periodData[0].length; i++) {
-          let colSum = 0;
-          for (let j = 1; j < periodData.length; j++) {
-            colSum += periodData[j][i] || 0;
-          }
-          totalRow.push(colSum);
-        }
-        
-        periodData.push(totalRow);
-        return { periodData };
+        totalsRow.push(typeTotal);
+        grandTotal += typeTotal;
       }
+      
+      totalsRow.push(grandTotal);
+      periodData.push(totalsRow);
+      
+      return { periodData };
     }
   }
   
@@ -286,20 +168,18 @@ export const processAndExport = (templateId, results, columns, customConfig = {}
   console.log("Processing:", template.id, "Category:", template.category, "type:", template.type);
   
   // Process based on format
-  switch (template.format) {
-    case 'csv':
-      exportAsCSV(data, columns, filename, config);
-      break;
-    case 'excel':
-      exportAsExcel(data, columns, filename, config, template);
-      break;
-    case 'json':
-      exportAsJSON(data, filename, config, template);
-      break;
-    default:
-      throw new Error(`Unsupported format: ${template.format}`);
+  const exportFunctions = {
+    'csv': exportAsCSV,
+    'excel': exportAsExcel,
+    'json': exportAsJSON
+  };
+  
+  const exportFunction = exportFunctions[template.format];
+  if (!exportFunction) {
+    throw new Error(`Unsupported format: ${template.format}`);
   }
   
+  exportFunction(data, columns, filename, config, template);
   return { success: true, filename };
 };
 
@@ -357,385 +237,358 @@ const exportAsExcel = (results, columns, filename, config, template) => {
   } = config;
 
   const workbook = XLSX.utils.book_new();
-  // Statistics
-  if (category === 'analysis' && template.id === 'analysis-statistical-summary') {
-    const rawDataSheet = XLSX.utils.json_to_sheet(results);
-    XLSX.utils.book_append_sheet(workbook, rawDataSheet, 'Raw Data');
-    // filters still not working
-    if (addFilters) {
-      rawDataSheet['!autofilter'] = { ref: XLSX.utils.encode_range(
-        { r: 0, c: 0 },
-        { r: results.length, c: columns.length - 1 }
-      )};
-    }
-    
-    let numericColumns = [];
-    for (let col of columns) {
-      for (let row of results) {
-        if (typeof row[col] === 'number' || !isNaN(parseFloat(row[col]))) {
-          numericColumns.push(col);
-          break;
-        }
-      }
-    }
-    
-    // Calculate basic stats
-    let summaryData = [
-      ['Column', 'Count', 'Min', 'Max', 'Sum', 'Average', 'Std Dev']
-    ];
-    
-    for (let col of numericColumns) {
-      let values = [];
-      for (let row of results) {
-        let val = row[col];
-        if (typeof val === 'number') {
-          values.push(val);
-        } else if (typeof val === 'string' && !isNaN(parseFloat(val))) {
-          values.push(parseFloat(val));
-        }
-      }
-      
-      if (values.length === 0) continue;
-      
-      let count = values.length;
-      let min = Math.min(...values);
-      let max = Math.max(...values);
-      let total = values.reduce((a,b) => a+b, 0); 
-      let avg = total / count;
-
-      // S.d
-      let sqDiffs = 0;
-      for (let i = 0; i < values.length; i++) {
-        sqDiffs += Math.pow(values[i] - avg, 2);
-      }
-      let stdDev = Math.sqrt(sqDiffs / count);
-      summaryData.push([col, count, min, max, total, avg, stdDev]);
-    }
-    
-    // Create summary sheet   
-    const statsSheet = XLSX.utils.aoa_to_sheet(summaryData);
-    XLSX.utils.book_append_sheet(workbook, statsSheet, 'Summary Statistics');
-    XLSX.writeFile(workbook, filename, { bookType: 'xlsx' });
-    return;
-  }
   
-  // Category analysis template
-  else if (category === 'analysis' && template.id === 'analysis-category-grouping') {
-    // Add raw data sheet
-    const rawDataSheet = XLSX.utils.json_to_sheet(results);
-    XLSX.utils.book_append_sheet(workbook, rawDataSheet, 'Raw Data');
-    let numericColumns = [];
-    for (let col of columns) {
-      for (let row of results) {
-        if (typeof row[col] === 'number' || !isNaN(parseFloat(row[col]))) {
-          numericColumns.push(col);
-          break;
-        }
-      }
-    }
-    
-    // Get unique categories
-    let cats = [];
-    results.forEach(r => {
-      if (!cats.includes(r[columns[0]])) {
-        cats.push(r[columns[0]]);
-      }
-    });
-    
-    // Create data for category analysis
-    let catData = [
-      ['Category', 'Count', ...numericColumns.map(col => `Sum of ${col}`), 
-                             ...numericColumns.map(col => `Average ${col}`)]
-    ];
-    
-    // For each category
-    for (let cat of cats) {
-      let catRows = results.filter(row => row[columns[0]] === cat);
-      let count = catRows.length;
-      
-      let row = [cat, count];
-      
-      // Calculate sums for each numeric column
-      numericColumns.forEach(col => {
-        // this is faster than using reduce I think
-        var s = 0;
-        for (var j = 0; j < catRows.length; j++) {
-          let v = catRows[j][col];
-          if (typeof v === 'number') s += v;
-          else if (!isNaN(parseFloat(v))) s += parseFloat(v);
-        }
-        row.push(s);
-      });
-      
-      // Calculate averages for each numeric column
-      for (let col of numericColumns) {
-        let sum = 0;
-        for (let dataRow of catRows) {
-          let val = dataRow[col];
-          if (typeof val === 'number') {
-            sum += val;
-          } else if (typeof val === 'string' && !isNaN(parseFloat(val))) {
-            sum += parseFloat(val);
-          }
-        }
-        row.push(sum / count);
-      }
-      
-      catData.push(row);
-    }
-    
-    // Create category analysis sheet
-    const catSheet = XLSX.utils.aoa_to_sheet(catData);
-    /* eslint-disable no-undef */
-    // Using global scope to avoid declaration issues - quick and dirty hack!
-    if (typeof window._workbook === 'undefined') {
-      window._workbook = XLSX.utils.book_new();
-    }
-    // Now use the global workbook
-    XLSX.utils.book_append_sheet(window._workbook, catSheet, 'Category Analysis');
-    
-    XLSX.writeFile(window._workbook, filename, { bookType: 'xlsx' });
-    return;
-  }
+  // Add raw data sheet in all cases
+  const rawDataSheet = XLSX.utils.json_to_sheet(results);
+  XLSX.utils.book_append_sheet(workbook, rawDataSheet, 'Raw Data');
   
-  // Financial report template 
-  else if (category === 'financial' && template.id === 'finance-quarterly-report') {
-    const rawDataSheet = XLSX.utils.json_to_sheet(results);
-    XLSX.utils.book_append_sheet(workbook, rawDataSheet, 'Raw Data');
-    
-    let dateCol = null;
-    for (let col of columns) {
-      if (col.toLowerCase().includes('date') || 
-          col.toLowerCase().includes('period') || 
-          col.toLowerCase().includes('quarter')) {
-        dateCol = col;
-        break;
-      }
-    }    
-    let amountCol = null;
-    for (let col of columns) {
-      if (col.toLowerCase().includes('amount') || 
-          col.toLowerCase().includes('value') || 
-          col.toLowerCase().includes('revenue') ||
-          col.toLowerCase().includes('expense')) {
-        amountCol = col;
-        break;
-      }
-    }
-    
-    if (dateCol && amountCol) {
-      let typeCol = null;
-      for (let col of columns) {
-        if (col !== dateCol && col !== amountCol &&
-           col.toLowerCase().includes('type')) {
-          typeCol = col;
-          break;
-        }
-      }
-      
-      if (typeCol) {
-        let periods = [];
-        for (let row of results) {
-          if (!periods.includes(row[dateCol])) {
-            periods.push(row[dateCol]);
-          }
-        }
-        
-        let types = [];
-        for (let row of results) {
-          if (!types.includes(row[typeCol])) {
-            types.push(row[typeCol]);
-          }
-        }
-        
-        // quarterly report data
-        let periodData = [
-          ['Period', ...types, 'Total']
-        ];
-        
-        for (let period of periods) {
-          let periodRows = results.filter(row => row[dateCol] === period);
-          let row = [period];
-          let periodTotal = 0;
-          
-          // For each type
-          for (let type of types) {
-            let typeRows = periodRows.filter(row => row[typeCol] === type);
-            let typeSum = 0;
-            
-            // Sum all values for this type in this period
-            for (let dataRow of typeRows) {
-              let val = dataRow[amountCol];
-              if (typeof val === 'number') {
-                typeSum += val;
-              } else if (typeof val === 'string' && !isNaN(parseFloat(val))) {
-                typeSum += parseFloat(val);
-              }
-            }
-            
-            row.push(typeSum);
-            periodTotal += typeSum;
-          }
-          
-          row.push(periodTotal);
-          periodData.push(row);
-        }
-        
-        let totalRow = ['Total'];        
-        for (let i = 1; i < periodData[0].length; i++) {
-          let colSum = 0;
-          for (let j = 1; j < periodData.length; j++) {
-            colSum += periodData[j][i] || 0;
-          }
-          totalRow.push(colSum);
-        }
-        
-        periodData.push(totalRow);
-
-        const quarterlySheet = XLSX.utils.aoa_to_sheet(periodData);
-        XLSX.utils.book_append_sheet(workbook, quarterlySheet, 'Quarterly Report');
-        XLSX.writeFile(workbook, filename, { bookType: 'xlsx' });
-        return;
-      }
-    }
-  }
-  
-  // Default handling for basic templates
-  // Create worksheet from data
-  const worksheet = XLSX.utils.json_to_sheet(results);
+  // Add filters if requested
   if (addFilters) {
-    worksheet['!autofilter'] = { ref: XLSX.utils.encode_range(
+    rawDataSheet['!autofilter'] = { ref: XLSX.utils.encode_range(
       { r: 0, c: 0 },
       { r: results.length, c: columns.length - 1 }
     )};
   }
   
-  XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
-  
-  // Add title and date if needed
-  if (addTitle || addDatetime) {
-    let titleRows = [];
-    
-    if (addTitle) {
-      titleRows.push([titleText]);
+  // Handle different templates
+  if (category === 'analysis') {
+    if (template.id === 'analysis-statistical-summary') {
+      addStatisticalSummarySheet(workbook, results, columns);
+    } else if (template.id === 'analysis-category-grouping') {
+      addCategoryAnalysisSheet(workbook, results, columns);
     }
+  } else if (category === 'financial' && template.id === 'finance-quarterly-report') {
+    addQuarterlyReportSheet(workbook, results, columns);
+  } else {
+    // Default case - just export data as is
+    const dataSheet = XLSX.utils.json_to_sheet(results);
+    XLSX.utils.book_append_sheet(workbook, dataSheet, sheetName);
     
-    if (addDatetime) {
-      titleRows.push([new Date().toLocaleString()]);
-    }
-    
-    titleRows.push([]);
-    titleRows.push(columns);
-    
-    for (let row of results) {
-      let dataRow = [];
-      for (let col of columns) {
-        dataRow.push(row[col]);
-      }
-      titleRows.push(dataRow);
-    }
-    
-    // Create new sheet from this data
-    const titleWorksheet = XLSX.utils.aoa_to_sheet(titleRows);
-    // Replace sheet in workbook
-    workbook.Sheets[sheetName] = titleWorksheet;
-    const rowOffset = (addTitle ? 1 : 0) + (addDatetime ? 1 : 0) + 1; // +1 for empty row
-    
-    // Add column filters if specified
-    if (addFilters) {
-      titleWorksheet['!autofilter'] = { ref: XLSX.utils.encode_range(
-        { r: rowOffset, c: 0 },
-        { r: rowOffset + results.length, c: columns.length - 1 }
-      )};
-    }
-    if (freezeHeaderRow) {
-      titleWorksheet['!freeze'] = { xSplit: 0, ySplit: rowOffset + 1 };
-    }
-  } else if (freezeHeaderRow) {
-    worksheet['!freeze'] = { xSplit: 0, ySplit: 1 };
+    // Format worksheet
+    formatWorksheet(dataSheet, results, columns, {
+      addTitle,
+      titleText,
+      addDatetime,
+      formatNumbers,
+      addTotalRow,
+      freezeHeaderRow
+    });
   }
   
-  if (addTotalRow) {
-    let numericColumns = [];
-    for (let i = 0; i < columns.length; i++) {
-      const col = columns[i];
-      // Check if column contains numebers
-      for (let j = 0; j < results.length; j++) {
-        const val = results[j][col];
-        if (typeof val === 'number' || !isNaN(parseFloat(val))) {
-          numericColumns.push({ index: i, name: col });
-          break;
-        }
-      }
+  // Write the file and trigger download
+  XLSX.writeFile(workbook, filename, { bookType: 'xlsx' });
+};
+
+// Add statistical summary sheet to workbook
+function addStatisticalSummarySheet(workbook, results, columns) {
+  let numericColumns = findNumericColumns(results, columns);
+  
+  // Calculate basic stats
+  let summaryData = [
+    ['Column', 'Count', 'Min', 'Max', 'Sum', 'Average', 'Std Dev']
+  ];
+  
+  for (let col of numericColumns) {
+    let values = getNumericValues(results, col);
+    let stats = calculateStats(values);
+    if (stats) {
+      summaryData.push([
+        col,
+        stats.count,
+        stats.min,
+        stats.max,
+        stats.sum,
+        stats.avg,
+        stats.stdDev
+      ]);
     }
+  }
+  
+  // Create summary sheet   
+  const statsSheet = XLSX.utils.aoa_to_sheet(summaryData);
+  XLSX.utils.book_append_sheet(workbook, statsSheet, 'Summary Statistics');
+}
+
+// Add category analysis sheet to workbook
+function addCategoryAnalysisSheet(workbook, results, columns) {
+  let numericColumns = findNumericColumns(results, columns);
+  
+  // Get unique categories
+  let cats = getUniq(results.map(r => r[columns[0]]));
+  
+  // Create data for category analysis
+  let catData = [
+    ['Category', 'Count', ...numericColumns.map(col => `Sum of ${col}`), 
+                         ...numericColumns.map(col => `Average ${col}`)]
+  ];
+  
+  // For each category
+  for (let cat of cats) {
+    let catRows = results.filter(row => row[columns[0]] === cat);
+    let count = catRows.length;
+    
+    let row = [cat, count];
+    
+    // Calculate sums for each numeric column
+    numericColumns.forEach(col => {
+      // Calculate sum
+      var s = 0;
+      for (var j = 0; j < catRows.length; j++) {
+        let v = catRows[j][col];
+        if (typeof v === 'number') s += v;
+        else if (!isNaN(parseFloat(v))) s += parseFloat(v);
+      }
+      row.push(s);
+    });
+    
+    // Calculate averages for each numeric column
+    for (let col of numericColumns) {
+      let values = getNumericValues(catRows, col);
+      let avg = values.length > 0 ? values.reduce((a, b) => a + b, 0) / values.length : 0;
+      row.push(avg);
+    }
+    catData.push(row);
+  }
+  
+  const catSheet = XLSX.utils.aoa_to_sheet(catData);
+  XLSX.utils.book_append_sheet(workbook, catSheet, 'Category Analysis');
+}
+
+// Add quarterly report sheet to workbook
+function addQuarterlyReportSheet(workbook, results, columns) {
+  // Find date/period column
+  let dateCol = null;
+  for (let col of columns) {
+    if (col.toLowerCase().includes('date') || 
+        col.toLowerCase().includes('period') || 
+        col.toLowerCase().includes('quarter')) {
+      dateCol = col;
+      break;
+    }
+  }
+  
+  // Find type/category column
+  let typeCol = null;
+  for (let col of columns) {
+    if (col.toLowerCase().includes('type') || 
+        col.toLowerCase().includes('category') || 
+        col.toLowerCase().includes('segment')) {
+      typeCol = col;
+      break;
+    }
+  }
+  
+  // Find amount column
+  let amountCol = null;
+  for (let col of columns) {
+    if (col.toLowerCase().includes('amount') || 
+        col.toLowerCase().includes('value') || 
+        col.toLowerCase().includes('total') ||
+        col.toLowerCase().includes('sum')) {
+      amountCol = col;
+      break;
+    }
+  }
+  
+  if (dateCol && amountCol) {
+    if (typeCol) {
+      let periods = getUniq(results.map(r => r[dateCol]));
+      
+      let types = getUniq(results.map(r => r[typeCol]));
+      
+      let periodData = [
+        ['Period', ...types, 'Total']
+      ];
+      
+      for (let period of periods) {
+        let periodRows = results.filter(row => row[dateCol] === period);
+        let row = [period];
+        
+        let periodTotal = 0;
+        for (let type of types) {
+          let typeRows = periodRows.filter(row => row[typeCol] === type);
+          let typeSum = 0;
+        
+          for (let dataRow of typeRows) {
+            let val = dataRow[amountCol];
+            if (typeof val === 'number') {
+              typeSum += val;
+            } else if (typeof val === 'string' && !isNaN(parseFloat(val))) {
+              typeSum += parseFloat(val);
+            }
+          }
+          row.push(typeSum);
+          periodTotal += typeSum;
+        }
+        row.push(periodTotal);
+        periodData.push(row);
+      }
+      
+      // Add totals row
+      let totalsRow = ['Total'];
+      let grandTotal = 0;
+      
+      for (let i = 1; i < periodData[0].length; i++) {
+        let colSum = 0;
+        for (let j = 1; j < periodData.length; j++) {
+          colSum += periodData[j][i] || 0;
+        }
+        totalsRow.push(colSum);
+        grandTotal += colSum;
+      }
+      
+      totalsRow.push(grandTotal);
+      periodData.push(totalsRow);
+      
+      const periodSheet = XLSX.utils.aoa_to_sheet(periodData);
+      XLSX.utils.book_append_sheet(workbook, periodSheet, 'Quarterly Report');
+    }
+  }
+}
+
+// Format an Excel worksheet with common formatting options
+function formatWorksheet(worksheet, results, columns, options) {
+  const {
+    addTitle,
+    titleText,
+    addDatetime,
+    formatNumbers,
+    addTotalRow,
+    freezeHeaderRow
+  } = options;
+  
+  let rowOffset = 0;
+  
+  // Add title if requested
+  if (addTitle) {
+    XLSX.utils.sheet_add_aoa(worksheet, [[titleText]], { origin: { r: 0, c: 0 } });
+    rowOffset++;
+  }
+  
+  // Add datetime if requested
+  if (addDatetime) {
+    const now = new Date();
+    XLSX.utils.sheet_add_aoa(worksheet, [[`Generated: ${now.toLocaleString()}`]], 
+      { origin: { r: rowOffset, c: 0 } });
+    rowOffset++;
+  }
+  
+  // Freeze header row if requested
+  if (freezeHeaderRow) {
+    worksheet['!freeze'] = { r: rowOffset + 1, c: 0 };
+  }
+  
+  // Format numbers if requested
+  if (formatNumbers) {
+    // Find numeric columns
+    const numericColumns = findNumericColumns(results, columns);
+    
+    // Create a map from header names to column letters
+    const headerToCol = {};
+    columns.forEach((col, idx) => {
+      headerToCol[col] = XLSX.utils.encode_col(idx);
+    });
+    
+    // Apply number format to numeric columns
+    numericColumns.forEach(col => {
+      const colLetter = headerToCol[col];
+      const range = `${colLetter}${rowOffset + 2}:${colLetter}${rowOffset + results.length + 1}`;
+      if (!worksheet['!cols']) worksheet['!cols'] = [];
+      const colIdx = columns.indexOf(col);
+      worksheet['!cols'][colIdx] = { numFmt: '#,##0.00' };
+    });
+  }
+  
+  // Add total row if requested
+  if (addTotalRow) {
+    let numericColumns = findNumericColumns(results, columns);
     
     if (numericColumns.length > 0) {
       let totalRow = Array(columns.length).fill('');
-      // Add "Total" in first cell
-      totalRow[0] = 'Total'; 
+      totalRow[0] = 'Total';
       
-      // Calculate totals for numeric columns
+      // Calculate totals for each numeric column
       for (let numCol of numericColumns) {
         let sum = 0;
         for (let i = 0; i < results.length; i++) {
-          const val = results[i][numCol.name];
+          const val = results[i][numCol];
           if (typeof val === 'number') {
             sum += val;
           } else if (typeof val === 'string' && !isNaN(parseFloat(val))) {
             sum += parseFloat(val);
           }
         }
-        totalRow[numCol.index] = sum;
+        totalRow[columns.indexOf(numCol)] = sum;
       }
       
-      const rowOffset = addTitle || addDatetime 
-          ? ((addTitle ? 1 : 0) + (addDatetime ? 1 : 0) + 1 + results.length + 1) 
-          : (results.length + 1);
-      
-      XLSX.utils.sheet_add_aoa(
-        workbook.Sheets[sheetName],
-        [totalRow],
-        { origin: { r: rowOffset, c: 0 } }
-      );
+      const totalRowIndex = rowOffset + results.length + 1;
+      XLSX.utils.sheet_add_aoa(worksheet, [totalRow], 
+        { origin: { r: totalRowIndex, c: 0 } });
     }
   }
-  
-  // Save file
-  XLSX.writeFile(workbook, filename, { bookType: 'xlsx' });
-};
-
+}
 
 const exportAsJSON = (results, filename, config, template) => {
-  // different approaches to use:
-  //   - just stringify the data : add metada, combine data with that and convert to string then blob
-  //   
-
-
-  let meta = {
-    exportDate: new Date().toISOString(),
-    count: results.length,
-    template: template ? template.name : 'None'
-  };
-  let export_data = {
-    meta: meta,
-    data: results
-  };
-  let json_str = JSON.stringify(export_data, null, 2);
-  let blob = new Blob([json_str], { type: 'application/json' });
-
-  // download link
-  let url = URL.createObjectURL(blob);
-  let a = document.createElement('a');
-  a.style.display = 'none';
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-
-  window.URL.revokeObjectURL(url);
-  document.body.removeChild(a);
-  return true;
-}
+  const { 
+    indent = 2, 
+    includeMetadata = true, 
+    nestProperties = false,
+    wrapInArray = true
+  } = config;
+  
+  let output;
+  
+  if (nestProperties) {
+    // Group related properties as nested objects
+    output = results.map(row => {
+      const newRow = {};
+      for (const key in row) {
+        // Look for keys with underscore format (e.g., customer_name, customer_id)
+        const parts = key.split('_');
+        if (parts.length > 1) {
+          const prefix = parts[0];
+          const property = parts.slice(1).join('_');
+          newRow[prefix] = newRow[prefix] || {};
+          newRow[prefix][property] = row[key];
+        } else {
+          newRow[key] = row[key];
+        }
+      }
+      return newRow;
+    });
+  } else {
+    output = results;
+  }
+  
+  // Add metadata if requested
+  if (includeMetadata) {
+    const meta = {
+      generated: new Date().toISOString(),
+      count: results.length,
+      fields: Object.keys(results[0] || {})
+    };
+    
+    output = {
+      meta,
+      data: wrapInArray ? output : output[0]
+    };
+  } else if (!wrapInArray) {
+    // Just return the first item if not wrapping in array
+    output = output[0];
+  }
+  
+  const jsonStr = JSON.stringify(output, null, indent);
+  
+  // Create download
+  const blob = new Blob([jsonStr], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+};
 
 // helper functions
 function escapeCsvField(value) {
@@ -754,4 +607,67 @@ function escapeCsvField(value) {
 // get unique elements from array - utility function
 function getUniq(arr) {
   return [...new Set(arr)];
+}
+
+// Extract numeric values from column data
+function getNumericValues(data, column) {
+  const values = [];
+  for (let row of data) {
+    let val = row[column];
+    if (typeof val === 'number') {
+      values.push(val);
+    } else if (typeof val === 'string' && !isNaN(parseFloat(val))) {
+      values.push(parseFloat(val));
+    }
+  }
+  return values;
+}
+
+// Calculate basic statistics for an array of numeric values
+function calculateStats(values) {
+  if (values.length === 0) return null;
+  
+  const count = values.length;
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const sum = values.reduce((a, b) => a + b, 0);
+  const avg = sum / count;
+  
+  // Calculate standard deviation
+  const sqDiffs = values.reduce((total, val) => {
+    return total + Math.pow(val - avg, 2);
+  }, 0);
+  const stdDev = Math.sqrt(sqDiffs / count);
+  
+  return { count, min, max, sum, avg, stdDev };
+}
+
+// Identify numeric columns in a dataset
+function findNumericColumns(data, columns) {
+  const numericColumns = [];
+  for (let col of columns) {
+    let hasNumbers = false;
+    for (let row of data) {
+      if (typeof row[col] === 'number' || !isNaN(parseFloat(row[col]))) {
+        hasNumbers = true;
+        break;
+      }
+    }
+    if (hasNumbers) {
+      numericColumns.push(col);
+    }
+  }
+  return numericColumns;
+}
+
+// Find a column that matches any of the patterns
+function findColumnByPattern(columns, patterns) {
+  for (let pattern of patterns) {
+    for (let col of columns) {
+      if (col.toLowerCase().includes(pattern)) {
+        return col;
+      }
+    }
+  }
+  return null;
 }
