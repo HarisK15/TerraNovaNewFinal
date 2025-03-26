@@ -1,5 +1,3 @@
-# This file provides shared state variables that can be imported by different route files
-
 class SharedState:
     _instance = None
     

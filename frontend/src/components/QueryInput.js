@@ -8,8 +8,7 @@ function QueryInput({ onSubmit, disabled, loading }) {
   const [query, setQuery] = useState('');
   const [chars, setChars] = useState(0);
   
-  // Todo: maybe add history of queries
-  
+  // Todo: add history of queries
   // runs when component loads
   useEffect(() => {
     console.log("input box ready");
@@ -69,12 +68,12 @@ function QueryInput({ onSubmit, disabled, loading }) {
         }}
       />
       
-      {/* shows how many chars typed */}
+      {/* shows no of chars typed*/}
       <Box sx={{ mx: 1, color: '#888', fontSize: '0.75rem', minWidth: '40px' }}>
         {chars > 0 && `${chars}`}
       </Box>
       
-      {/* button to send */}
+      {/*send button */}
       <Button
         type="submit"
         variant="contained"

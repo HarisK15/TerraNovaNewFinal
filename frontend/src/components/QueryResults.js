@@ -24,7 +24,8 @@ import ExportTemplatesDialog from './ExportTemplatesDialog';
 // Todo: clean this up before submitting!
 
 // supported formats
-var formats = ['json', 'csv', 'excel'];  // 'pdf' not working yet
+// todo; implement pdf
+var formats = ['json', 'csv', 'excel'];  
 
 //   function downloadStuff() {
 //     // Todo: implement 
@@ -42,21 +43,18 @@ function QueryResults(props) {
     }
   }
   
-    // get results from props
   var rs = props.results;
-      var cols = props.columns; 
-var qtype = props.queryType || 'sql';
+  var cols = props.columns; 
+  var qtype = props.queryType || 'sql';
   var queryCode = props.queryCode || '';
-      var exportIntent = props.exportIntent;
+  var exportIntent = props.exportIntent;
   var exportFormat = props.exportFormat;
     var exportTemplateType = props.exportTemplateType;
   
-  
-  // dialog variables
   const [dialogOpen, setDialogOpen] = useState(false);
   // might need later
   var debug = false;
-  
+
   var numCols = cols.length;
           console.log("num cols:", numCols);
   
@@ -95,16 +93,15 @@ var qtype = props.queryType || 'sql';
   */
   
 // rendering data in table format
-  // function for render data in table
 function renderDataTable() {
 var tableData = [];
     for (var i = 0; i < rs.length; i++) {
-var row = [];
-for (var j = 0; j < cols.length; j++) {
-var cell = rs[i][cols[j]];
-if (cell == null || cell == undefined) {
-          cell = '';
-        }
+        var row = [];
+        for (var j = 0; j < cols.length; j++) {
+            var cell = rs[i][cols[j]];
+            if (cell == null || cell == undefined) {
+                cell = '';
+            }
 row.push(cell);
       }
 tableData.push(row);
@@ -202,7 +199,6 @@ if (rs != null && rs != undefined) {
         {queryCode}
       </Typography> : null}
   </Paper>;
-    
     return comp;
   }
 
@@ -247,13 +243,13 @@ color="primary"
         
 
 
+
+
         <Button
           size="small"
         startIcon={<DownloadIcon />}
           onClick={() => {
             console.log("Downloading as CSV");
-            
-            // create header row
             var str = "";
             for(var i = 0; i < cols.length; i++){
               str += cols[i];
@@ -263,24 +259,20 @@ color="primary"
             }
             str += '\n';
             console.log("header done");
-            
-            // rows
             for(var j = 0; j < rs.length; j++) {
-                var rowData = rs[j];
+              var rowData = rs[j];
               var rowStr = "";
               
               for(var k = 0; k < cols.length; k++) {
                 var colName = cols[k];
                 var val = rowData[colName];
                 
-                // check if value is null
                 if (val == null || val == undefined) {
                   val = '';
                 } else {
                   val = String(val);
                 }
                 
-                // handle commas
                 if(val.indexOf(',') > -1) {
                   val = '"' + val + '"';
                 }
@@ -315,7 +307,6 @@ color="primary"
         size="small"
           startIcon={<DownloadIcon />}
           onClick={() => {
-              // this is for excel
             var ws = XLSX.utils.json_to_sheet(rs);
             var wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "Data");
@@ -383,7 +374,4 @@ variant="outlined"
 // todo add filtering
 // todo fix bug with commas in csv
 // todo implement pdf export
-
-
-
 export default QueryResults;

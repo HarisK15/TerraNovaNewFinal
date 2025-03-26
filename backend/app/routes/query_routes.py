@@ -13,7 +13,6 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 query_bp = Blueprint("query_bp", __name__, url_prefix="/")
-# file stored globally 
 active_filepath = None
 
 @query_bp.route("/active-file", methods=["GET"])
@@ -25,7 +24,6 @@ def get_active_file():
             "success": False,
             "error": "File not found"
         }), 404
-    #extracts schema info
     schema = get_database_schema(active_filepath)
     return jsonify({
         "success": True,
@@ -45,14 +43,13 @@ def set_active_file():
     if not filepath:
         return jsonify({"error": "No file path provided"}), 400
     
-    # check if path is absolute
     if not os.path.isabs(filepath):
         backend_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
         full_path = os.path.join(backend_dir, filepath)
     else:
         full_path = filepath
         
-    # check if file exists
+
     if not os.path.exists(full_path):
         return jsonify({"error": f"File not found: {full_path}"}), 404
     global active_filepath
@@ -74,7 +71,6 @@ def handle_query():
         print("User query is missing!") 
         return jsonify({"error": "Query required"}), 400
         
-    # make sure we have a filepath
     if not filepath:
         return jsonify({"error": "No file path provided"}), 400
     
@@ -89,16 +85,12 @@ def handle_query():
         print(f"Error in schema: {schema['error']}")
         return jsonify({"error": schema["error"]}), 400
         
-    # prepare schema for prompt
     formatted_schema = format_schema_for_prompt(schema)
     print("Schema information sent to LLM...")
     
-    # figure out file type
     file_extension = os.path.splitext(filepath)[1].lower() 
     
-    # generate query based on type
     if file_extension == '.csv':
-        # if csv use pandas
         query_result = get_pandas_query(user_query, formatted_schema)
         if not query_result.get("success", False):
             logger.warning("Pandas failed, using SQL now")
@@ -106,7 +98,6 @@ def handle_query():
     else:
         query_result = get_sql_query(user_query, formatted_schema)
     
-    # check if we got a query
     if not query_result.get("success", False):
         return jsonify({
             "success": False,

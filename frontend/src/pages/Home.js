@@ -22,7 +22,7 @@ function Home() {
   var nav = useNavigate();
   const theme = useTheme();
   const btnColour = 'primary';
-  // purples colours
+  // purply colours
   let lightPurple = '#ede7f6'; 
   let mainPurple = '#9c27b0';  
   let darkPurple = '#7b1fa2';  
@@ -74,11 +74,9 @@ function Home() {
   
 // go to next page
   const navQuery = () => 
-  
   {
-    // Debugging line left in 
     console.log("User clicked the button at: " + new Date().toISOString());
-    nav('/query'); // Navigate to query page
+    nav('/query'); 
   };
   
   const Querycheck = () => {
@@ -89,7 +87,7 @@ function Home() {
     <Box sx={{ py: 2, px: 1 }}>
       <div style={{ width: '100%', display: 'block' }}/>
 
-      {/* top biit */}
+      {/* top bit */}
       <Box
         sx={{
           textAlign: 'center',
@@ -131,7 +129,7 @@ function Home() {
         </Typography>
 
 
-        {/* button */}
+        {/* one of the buttons */}
         <Button variant="contained" color={btnColour} size="large"
           endIcon={<ArrowForwardIcon />}
           onClick={() => {
@@ -150,7 +148,7 @@ function Home() {
       <Grid container 
       spacing={2} 
       sx={{ mb: 4 }}>
-        {/* card 1 */}
+        {/* left card */}
         <Grid 
         item xs={12} md={5}>
           <Card style={card_style}><CardContent sx={{ flexGrow: 1, py: 2 }}>
@@ -176,7 +174,7 @@ function Home() {
           </Card>
         </Grid>
 
-        {/* card 2 */}
+        {/* middle card */}
         <Grid item xs={12} md={3.5}>
           <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column', boxShadow: '0px 1px 3px rgba(0,0,0,0.1)' }}>
             <CardContent 
@@ -210,7 +208,7 @@ function Home() {
         </Grid>
         
         
-        {/* card 3*/}
+        {/* right card */}
         <Grid item xs={12} md={3.5}>
           <Card style={{
             height: '100%', 
@@ -246,7 +244,6 @@ function Home() {
         </Grid>
       </Grid>
 
-      {/* upload section with inconsistent styling */}
       <Box 
       sx={{maxWidth: '100%',
         p: 2,
@@ -275,7 +272,6 @@ function Home() {
       */}
       <div style={{marginTop: '40px'}}></div>
 
-      {/* Poorly formatted footer with inconsistent indentation */}
       <Box sx={{ 
       textAlign: 'center', 
       mt: 5, 

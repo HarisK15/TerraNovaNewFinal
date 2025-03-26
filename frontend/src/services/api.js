@@ -13,7 +13,6 @@ export const uploadFile = async (file) => {
         console.log('Trying to upload:', file.name);
         const formData = new FormData();
         formData.append('file', file);
-        
         const response = await axios.post(`${API_BASE_URL}/upload`, formData, {
             headers: {
                 'Content-Type': 'multipart/form-data',
@@ -26,7 +25,7 @@ export const uploadFile = async (file) => {
     }
 };
 
-// Function to send a query
+// Function to send query
 export const sendQuery = async (query, activeFile) => {
     try {
         const payload = {
@@ -40,8 +39,8 @@ export const sendQuery = async (query, activeFile) => {
         console.log('Query response:', response.data);
         return response.data;
     } catch (error) {
-        console.error('Error sending query:', error);
-        return { success: false, error: error.message || 'Query failed' };
+        console.error('cant send query:', error);
+        return { success: false, error: error.message || 'query failed' };
     }
 };
 
@@ -54,8 +53,8 @@ export const setActiveFile = async (filePath) => {
         const response = await api.post('/active-file', payload);
         return response.data;
     } catch (error) {
-        console.error('Error setting active file:', error);
-        return { success: false, error: error.message || 'Failed to set active file' };
+        console.error('problem setting active file:', error);
+        return { success: false, error: error.message || 'Failed to set file' };
     }
 };
 
@@ -64,11 +63,11 @@ export const getActiveFile = async () => {
     try {
         console.log('Getting active file');
         const response = await api.get('/active-file');
-        console.log('Get active file response:', response.data);
+        console.log('get active file response:', response.data);
         return response.data;
     } catch (error) {
-        console.error('Error getting active file:', error);
-        return { success: false, error: error.message || 'Failed to get active file' };
+        console.error('problem getting active file:', error);
+        return { success: false, error: error.message || 'Failed to get file' };
     }
 };
 export default {

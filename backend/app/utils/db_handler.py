@@ -11,10 +11,8 @@ logging.basicConfig(
     level=logging.DEBUG, 
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
-
 logger = logging.getLogger(__name__)
 
-# Error handling decorator to reduce repeated try-except blocks
 def handle_exceptions(return_error_dict=True):
     def decorator(func):
         @functools.wraps(func)
@@ -35,51 +33,36 @@ def handle_exceptions(return_error_dict=True):
 def get_database_schema(file_path):
     abs_file_path = os.path.abspath(file_path)  
     logger.info(f"Checking file at {abs_file_path}")
-
     file_extension = os.path.splitext(abs_file_path)[1].lower()
-    
     schema = {}
     
-    # check whether file uploaded is a database 
     if file_extension == '.db':
         conn = sqlite3.connect(abs_file_path)
         cursor = conn.cursor()
-
-        # Get all table names
         cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
         tables = [row[0] for row in cursor.fetchall()]
         logger.info(f"Following Tables found: {tables}")
-
-        # extract column names from upload for use in llm
         for table in tables:
             cursor.execute(f"PRAGMA table_info({table});")
             columns = [row[1] for row in cursor.fetchall()]
             schema[table] = columns
             logger.info(f"Columns in {table}: {columns}")
-
         conn.close()
 
-    # check if file uploaded is a csv file
     elif file_extension == '.csv':
         df_sample = pd.read_csv(abs_file_path, nrows=5)
-        # Always use 'data' as the table name for CSV files
         schema['data'] = df_sample.columns.tolist()
         logger.info(f"CSV Columns: {schema['data']}")
-        
     return schema
 
 def format_schema_for_prompt(schema):
-    """Format the schema information for the LLM prompt."""
     if isinstance(schema, dict) and "error" in schema:
         return f"Error in schema: {schema['error']}"
         
     formatted_schema = ["Database Schema:"]
-    
     for table, columns in schema.items():
         formatted_schema.append(f"Table: {table}")
         formatted_schema.append(f"Columns: {', '.join(columns)}")
-        
-        # Add example values if available
         try:
             if table.endswith('.csv'):
                 file_path = os.path.join('uploads', table)
@@ -87,7 +70,6 @@ def format_schema_for_prompt(schema):
                 file_path = os.path.join('uploads', f"{table}.db")
                 
             if os.path.exists(file_path):
-                # For each table, get a sample row to show example values
                 if file_path.endswith('.db'):
                     conn = sqlite3.connect(file_path)
                     cursor = conn.cursor()
@@ -116,41 +98,29 @@ def format_schema_for_prompt(schema):
 
 @handle_exceptions()
 def execute_pandas_query(file_path, pandas_code):
-    """Execute a pandas query on a CSV file."""
     abs_file_path = os.path.abspath(file_path)
     if not os.path.exists(abs_file_path):
         return {"success": False, "error": f"File not found: {file_path}"}
     
-    # Determine the file format
     file_extension = os.path.splitext(abs_file_path)[1].lower()
-    
     if file_extension != '.csv':
         return {"success": False, "error": "This operation is only supported for CSV files"}
-        
-    # Read the CSV file
-    logger.info(f"Successfully read CSV file: {abs_file_path}")
+    
     df = pd.read_csv(abs_file_path)
     logger.info(f"DataFrame shape: {df.shape}")
-    logger.info(f"DataFrame columns: {df.columns.tolist()}")
     
-    # Special case for simple column selection like df[['col1', 'col2']]
+    # Handle special case for simple column selection
     column_selection_pattern = r"df\[\[(.+)\]\]"
     match = re.search(column_selection_pattern, pandas_code)
     if match:
         columns_str = match.group(1)
-        logger.info(f"Detected simple column selection: {columns_str}")
         
-        # Extract column names from the string
         try:
-            # Split by comma and remove quotes and whitespace
             requested_columns = []
             for col_str in columns_str.split(','):
-                # Remove quotes and spaces
                 clean_col = col_str.strip().strip("'").strip('"')
                 requested_columns.append(clean_col)
-            
-            logger.info(f"Requested columns: {requested_columns}")
-            # Filter to only include columns that exist in the DataFrame
+
             valid_columns = [col for col in requested_columns if col in df.columns]
             logger.info(f"Valid columns found in DataFrame: {valid_columns}")
             
@@ -170,51 +140,33 @@ def execute_pandas_query(file_path, pandas_code):
                 }
         except Exception as column_error:
             logger.info(f"Error processing column selection: {str(column_error)}")
-            # Fall through to standard execution
     
-    # Execute the pandas code directly
-    logger.info(f"Running pandas code: {pandas_code[:100]}...")
     print(f"Running pandas code: {pandas_code[:100]}...")
-    
+
     # Create locals dictionary with the DataFrame
     locals_dict = {'df': df, 'result': None}
-    
-    # Execute the pandas code with no timeout limitation
     exec(f"result = {pandas_code}", {'pd': pd, 'np': np, '__builtins__': {}}, locals_dict)
-        
-    # Handle value_counts results with duplicate column names
-    if isinstance(locals_dict['result'], pd.DataFrame) and len(locals_dict['result'].columns) == 2 and locals_dict['result'].columns.duplicated().any():
-        logger.info("Fixing duplicate column names in value_counts() result")
-        locals_dict['result'].columns = ["value", "count"]
     
-    # If result is a DataFrame, convert it to a dictionary for JSON
+    if isinstance(locals_dict['result'], pd.DataFrame) and len(locals_dict['result'].columns) == 2 and locals_dict['result'].columns.duplicated().any():
+        locals_dict['result'].columns = ["value", "count"]
     if isinstance(locals_dict['result'], pd.DataFrame):
-        logger.info(f"Query results shape: {locals_dict['result'].shape}")
-        if not locals_dict['result'].empty:
-            logger.info(f"First few results:\n{locals_dict['result'].head(3)}")
-            
-            # Check for duplicate column names and fix them
-            if any(locals_dict['result'].columns.duplicated()):
-                logger.info("Found duplicate column names, renaming them")
-                # Rename duplicate columns by adding a number suffix
-                cols = list(locals_dict['result'].columns)
-                for i, col in enumerate(cols):
-                    count = cols[:i].count(col)
-                    if count > 0:
-                        cols[i] = f"{col}_{count}"
-                locals_dict['result'].columns = cols
+        if any(locals_dict['result'].columns.duplicated()):
+            # Rename duplicate columns by adding a number suffix
+            cols = list(locals_dict['result'].columns)
+            for i, col in enumerate(cols):
+                count = cols[:i].count(col)
+                if count > 0:
+                    cols[i] = f"{col}_{count}"
+            locals_dict['result'].columns = cols
         
-        # Convert DataFrame to dict for JSON serialization
         results_dict = locals_dict['result'].to_dict(orient='records')
-        
         return {
             "success": True,
             "results": results_dict,
             "columns": locals_dict['result'].columns.tolist()
         }
     elif isinstance(locals_dict['result'], pd.Series):
-        logger.info(f"Result is a Series with shape: {locals_dict['result'].shape}")
-        # Convert Series to DataFrame first
+        # Convert Series to DataFrame
         result_df = locals_dict['result'].reset_index()
         
         # If index has no name, give it a default
@@ -230,8 +182,6 @@ def execute_pandas_query(file_path, pandas_code):
         }
     else:
         # Handle scalar or other types
-        logger.info(f"Result is not a DataFrame or Series: {type(locals_dict['result'])}")
-        # Convert to a single-item list for consistency
         return {
             "success": True,
             "results": [{"result": locals_dict['result']}],
@@ -240,15 +190,11 @@ def execute_pandas_query(file_path, pandas_code):
 
 @handle_exceptions()
 def execute_query(file_path, sql_query):
-    """Execute an SQL query against the database or CSV file."""
     abs_file_path = os.path.abspath(file_path)
     file_extension = os.path.splitext(abs_file_path)[1].lower()
     
-    # For SQLite database
     if file_extension == '.db':
         conn = sqlite3.connect(abs_file_path)
-        
-        # Execute the query and fetch results
         results = pd.read_sql_query(sql_query, conn)
         conn.close()
         
@@ -258,46 +204,21 @@ def execute_query(file_path, sql_query):
             "columns": results.columns.tolist()
         }
         
-    # For CSV file
     elif file_extension == '.csv':
-        # Read the CSV into a DataFrame
         df = pd.read_csv(abs_file_path)
-        
-        # Print the first few rows and column names for debugging
         logger.info(f"CSV DataFrame columns: {df.columns.tolist()}")
         logger.info(f"CSV DataFrame sample data:\n{df.head(3)}")
         
-        
-        # CSV files need special handling - we'll create a temporary SQLite database in memory
+        # Create temporary in-memory SQLite database
         conn = sqlite3.connect(":memory:")
-        # Always use 'data' as the table name for all CSV files
         table_name = 'data'
-        
-        # Write the DataFrame to the in-memory database
         df.to_sql(table_name, conn, index=False, if_exists="replace")
-        
-        # Verify table creation
-        cursor = conn.cursor()
-        cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
-        tables = cursor.fetchall()
-        logger.info(f"Tables in memory DB: {tables}")
-        
-        # Get column names from the table
-        cursor.execute(f"PRAGMA table_info({table_name});")
-        columns = [row[1] for row in cursor.fetchall()]
-        logger.info(f"Columns in memory DB table: {columns}")
-        
-        # Print the SQL query being executed
-        logger.info(f"Executing SQL Query on CSV data: {sql_query}")
         
         # Execute the query
         try:
+            logger.info(f"Executing SQL Query: {sql_query}")
             results = pd.read_sql_query(sql_query, conn)
             logger.info(f"Query results shape: {results.shape}")
-            if not results.empty:
-                logger.info(f"First few results:\n{results.head(3)}")
-            else:
-                logger.info("Query returned no results")
         finally:
             conn.close()
         
@@ -313,7 +234,6 @@ def execute_query(file_path, sql_query):
         }
 
 def format_results(results):
-    """Format the results for display and for use in the explanation prompt."""
     if not results.get("success", False):
         return f"Error: {results.get('error', 'Unknown error')}"
     
@@ -323,12 +243,11 @@ def format_results(results):
     if not data:
         return "The query returned no results."
     
-    # Format as a table-like string
+    # manually formatting as table-like string
     output = [" | ".join(columns)]
     output.append("-" * len(output[0]))
     
     for row in data:
         row_values = [str(row.get(col, "")) for col in columns]
         output.append(" | ".join(row_values))
-    
     return "\n".join(output)

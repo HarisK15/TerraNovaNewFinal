@@ -102,7 +102,6 @@ def get_pandas_query(user_input, llm_model):
 
         Now, generate a Pandas query for:
         """),
-        # inject users input
         ("human", "{question}")
     ])
 

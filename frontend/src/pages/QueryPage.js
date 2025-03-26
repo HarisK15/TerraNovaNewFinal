@@ -51,7 +51,6 @@ function QueryPage() {
   const lightPurple = '#ede7f6'; 
   const purpleMain = '#9E77ED'; 
   const darkPurple = '#7b1fa2';
-  // use somewhere?
   var light_mode_bg = '#ffffff';
   
   // console.log("QueryPage rendering - active file:", activeFile);
@@ -63,7 +62,6 @@ function QueryPage() {
     }
   }, [msgs]);
 
-  // get active file
   const grabFile = async () => {
     try {
       const response = await axios.get('/active-file');
@@ -98,7 +96,7 @@ function QueryPage() {
 useEffect(() => {
     if (scrollRef && scrollRef.current) {
       setTimeout(() => { 
-        // adding timeout fixed it sometimes
+        // adding timeout fixed it (sometimes)
         scrollRef.current.scrollIntoView({ behavior: 'smooth' });
        }, 100);
     }
@@ -106,23 +104,19 @@ useEffect(() => {
 
   // Scroll to bottom of chat when messages change
   useEffect(() => {
-    // console.log("scrolling down");
     if (scrollRef.current) {
       scrollRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [msgs]);
 
-  // Function that sends the query to Ollama
+  // send query to llm
   const sendQuery = async (query) => {
     console.log("submitting query:", query);
     
-    // Check if query is empty
     if (!query.trim()) {
       console.log("Empty query");
       return;
     }
-
-    // Return if no active file
     if (!activeFile) {
       console.log("No active file, showing error");
       setErr('Please upload a file first');
@@ -140,11 +134,8 @@ useEffect(() => {
       const response = await axios.post('/query', { query });
       console.log("query response:", response.data);
       
-      // Only proceed if successful
       if (response.data.success) {
-        // Check if file request
         if (response.data.is_export) {
-          // Handle export response
           console.log("Export request detected");
           const exportData = {
             results: response.data.results,
@@ -191,7 +182,6 @@ useEffect(() => {
         addChat([...updatedMsgs, { type: 'error', content: errorMsg }]);
       }
     } catch (err) {
-      // Just log the error but don't handle it or show it to the user
       console.error("Query request error:", err);
       console.log("Should probably handle this error at some point");
       isLoading(false);
@@ -205,12 +195,9 @@ useEffect(() => {
     const selectedFile = event.target.files[0];
     if (selectedFile) {
       console.log("Selected file:", selectedFile.name);
-      // use Fileupload componentn instead
-      console.log("Would upload file:", selectedFile);
     }
   };
   
-  // Function to handle opening the export dialog
   const openExportStuff = (data) => {
     setExportThing(data);
     toggleDialog(true);
@@ -220,7 +207,6 @@ useEffect(() => {
     toggleDialog(false);
   };
 
-  // Function to render chat messages
   const renderChatMsgs = () => {
     if (msgs.length === 0) {
       return (
@@ -285,7 +271,6 @@ useEffect(() => {
         );
       }
       
-      // error message
       if (message.type === 'error') {
         return (
           <Box key={index} style={{ display: 'flex', marginBottom: '16px' }}>

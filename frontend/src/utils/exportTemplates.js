@@ -1,28 +1,17 @@
-/**
- * Export Templates
- * 
- * Templates for exporting data in different formats
- */
-
-// Format date for filenames
 const formatDate = () => {
   const now = new Date();
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 };
 
-// Process filenames with date
 const processFilename = (filename) => {
   // Replace the date placeholder with actual date
   if (filename.includes('{date}')) {
     return filename.replace('{date}', formatDate());
   }
-  // Return unchanged if no placeholder found
   return filename;
 };
 
-// List of export templates
 export const exportTemplates = [
-  // CSV templates
   {
     id: 'csv-basic',
     name: 'Basic CSV',
@@ -45,13 +34,12 @@ export const exportTemplates = [
     type: 'basic',
     config: {
       includeHeader: true,
-      bom: true, // Add byte order mark for Excel
+      bom: true, 
       delimiter: ',',
       encoding: 'utf-8'
     }
   },
   
-  // Excel templates
   {
     id: 'excel-basic',
     name: 'Basic Excel',
@@ -68,7 +56,6 @@ export const exportTemplates = [
     }
   },
   
-  // JSON templates
   {
     id: 'json-basic',
     name: 'Basic JSON',
@@ -96,21 +83,19 @@ export const exportTemplates = [
   }
 ];
 
-// Helper function to find a template by ID
+//find a template by ID
 export const findTemplateById = (templateId) => {
   return exportTemplates.find(template => template.id === templateId);
 };
 
-// Prepare a template for export
+// Prepare template for export
 export const prepareTemplate = (templateId, results, config = {}) => {
-  // Find the template
   const foundTemplate = findTemplateById(templateId);
   
   if (!foundTemplate) {
     throw new Error(`Template with ID ${templateId} not found`);
   }
   
-  // Create filename (replace spaces with underscores and add date)
   const today = new Date();
   const dateStr = today.toISOString().slice(0, 10);
   
@@ -120,8 +105,6 @@ export const prepareTemplate = (templateId, results, config = {}) => {
   } else {
     filename = `${foundTemplate.name.replace(/\s+/g, '_')}_${dateStr}.${foundTemplate.format}`;
   }
-  
-  // Return all the info needed for exporting
   return {
     template: foundTemplate,
     filename,
@@ -132,10 +115,7 @@ export const prepareTemplate = (templateId, results, config = {}) => {
 
 // Apply template to data
 export const applyTemplate = (templateId, results, columns, customConfig = {}) => {
-  // Get the basic template data
   const templateData = prepareTemplate(templateId, results, customConfig);
-  
-  // Extract needed values
   const { template } = templateData;
   
   // Merge the base config with any custom settings
@@ -145,11 +125,7 @@ export const applyTemplate = (templateId, results, columns, customConfig = {}) =
     category: template.category,
     type: template.type
   };
-  
-  // Process the filename
   const filename = processFilename(templateData.filename);
-  
-  // Return the full configuration
   return {
     template,
     filename,

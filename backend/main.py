@@ -15,20 +15,21 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+
 print("Starting server...")
 print("Loading environment variables....")
 load_dotenv()
 
 UPLOAD_FOLDER = os.path.join(os.getcwd(), 'uploads')
 if not os.path.exists(UPLOAD_FOLDER):
-    print(f"Creating uploads directory: {UPLOAD_FOLDER}")
+    print(f"Creating uploads Folder: {UPLOAD_FOLDER}")
     os.makedirs(UPLOAD_FOLDER)
 
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 # Allow larger files sizes
-app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50 MB limit
+app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  
 CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
 app.register_blueprint(file_routes)
 app.register_blueprint(query_bp)

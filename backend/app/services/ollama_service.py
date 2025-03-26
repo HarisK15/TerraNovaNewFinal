@@ -68,7 +68,6 @@ Finally, please generate a valid SQL query to answer this question: "{user_query
       "message": "Failed to generate SQL query"
     }
 
-# Generate a Pandas query
 def get_pandas_query(user_query, schema_info):
   export_meta = detect_export_meta(user_query)
   
@@ -182,7 +181,6 @@ def detect_export_meta(user_query):
       detected_format = format_name
       break
   
-    # Detect template type
   template_type = "basic"
   if "report" in q or "summary" in q:
     template_type = "report"
@@ -197,7 +195,7 @@ def detect_export_meta(user_query):
   col_matches = re.findall(col_pattern, q)
   potential_columns.extend(col_matches)
   
-    # very specific for df_customers file; check for words like "id", "state", "city", etc.
+    # specific to df_customers file; check for words like "id", "state", "city", etc.
   column_keywords = ["id", "state", "city", "zip", "code", "prefix", "name", "price", "amount"]
   for keyword in column_keywords:
     if keyword in q and not any(f"_{keyword}" in col for col in potential_columns):
@@ -221,7 +219,7 @@ def detect_export_meta(user_query):
   }
   return export_meta
 
-# Generate a natural language explanation of the query results
+# Generate a natural language explanation 
 def explain_query_results(results, user_query):
   prompt = f"""Based on the following query results for the question "{user_query}":
 

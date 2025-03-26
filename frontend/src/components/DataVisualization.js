@@ -8,7 +8,7 @@ import { Box, Typography, FormControl, InputLabel, Select, MenuItem, Paper, Butt
 import html2canvas from 'html2canvas';
 import DownloadIcon from '@mui/icons-material/Download';
 
-// purple colours
+// purply colours
 const clrs = ['#8884d8', '#82ca9d', '#ffc658', '#ff8042', '#0088FE', '#00C49F'];
 
 //visualization component
@@ -24,12 +24,10 @@ const chartRef = useRef(null);
 // tried using callback but  didn't work
   // check if the data is good for charts
   useEffect(() => {
-    // check if data present
     if (!results ||results.length === 0||!columns ||columns.length===0) {
       setShowGraph(false);
       return;
     }
-    // look for number columns
     let gotNums = false;
     for (let i = 0; i < results.length; i++) {
       let r = results[i];
@@ -54,7 +52,6 @@ const chartRef = useRef(null);
       let r1 = results[0];
 for (let c = 0; c < columns.length; c++) {
         let colName = columns[c];
-        // check if it's a number
         if (!isNaN(r1[colName]) && r1[colName] !== null) {
           numCols.push(colName);
         } else {
@@ -87,7 +84,7 @@ for (let c = 0; c < columns.length; c++) {
       return;
     }
 
-// Todo:optimize
+    // Todo:optimize
     let newStuff = [];
     // make data for chart
     for (let i = 0; i < results.length; i++) {
@@ -124,12 +121,11 @@ for (let j = 0; j < columns.length; j++) {
     return null;
   }
 
-  // export chart as PNG
+  // export chart as PNG using html2canvas
   function saveAsPNG() {
     if (!chartRef.current) {
       return;
     }
-    // use html2canvas to take screenshot
     html2canvas(chartRef.current).then(canvas => {
       //temporary link
       const a = document.createElement('a');
@@ -142,7 +138,6 @@ for (let j = 0; j < columns.length; j++) {
   }
 
 
-  // handle changes below
   function changeGraphType(event) {
     setGraphType(event.target.value);
   }

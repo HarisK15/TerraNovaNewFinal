@@ -4,7 +4,6 @@ import unittest
 import os
 import sys
 
-# So we can import app modules
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from app.services.ollama_service import clean_response
 

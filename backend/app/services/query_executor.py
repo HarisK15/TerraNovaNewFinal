@@ -12,11 +12,9 @@ logging.basicConfig(
     level=logging.DEBUG, 
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
-
 logger = logging.getLogger(__name__)
 
 
-# Run a raw SQL query on a local SQLite file
 def run_sql_query(query, db_path):
     abs_db_path = os.path.abspath(db_path) 
     logger.info(f"running SQL on -> {abs_db_path}")
@@ -56,7 +54,6 @@ def run_pandas_query(query, df):
                 elif '.count()' in query:
                     label = 'Count'
                 
-                # Extract column name if present in query
                 col_name = None
                 start = query.find("df['")
                 end = query.find("']", start)
@@ -66,7 +63,6 @@ def run_pandas_query(query, df):
                     return pd.DataFrame({f"{label} of {col_name}": [result]})
                 else:
                     return pd.DataFrame({label: [result]})
-        # Regular query exec
         result = eval(query, {"df": df})
         if isinstance(result, pd.DataFrame):
             return result
@@ -79,7 +75,7 @@ def run_pandas_query(query, df):
             return pd.DataFrame({"Error": ["Invalid groupby operation. For simple count queries, use len(df) instead."]})
         return pd.DataFrame({"Error": [f"Error executing Pandas query: {error_message}"]})
 
-# Takes a natural language query and runs it as either SQL or Pandas, depending on the input
+# Takes a natural language query and runs it as either SQL or Pandas
 def handle_query(user_query, llm_model, db_path=None, df=None):
     try:
         if db_path:

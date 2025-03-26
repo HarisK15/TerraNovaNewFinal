@@ -1,12 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 // import { Navigate } from 'react-router-dom'; // maybe needed later?
-
-// MUI theming and basic reset
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 
-// Some Material UI components
+//Material UI components
 import {
   AppBar, 
   Toolbar, 
@@ -18,7 +16,7 @@ import {
   // TextField 
 } from '@mui/material';
 
-// MUI icons (some unused, keeping for now)
+// MUI icons
 import TerminalIcon from '@mui/icons-material/Terminal';
 import MenuIcon from '@mui/icons-material/Menu';
 // import SettingsIcon from '@mui/icons-material/Settings'; 
@@ -33,7 +31,7 @@ import QueryPage from './pages/QueryPage';
 // const SettingsPage = lazy(() => import('./pages/Settings'));
 import axios from 'axios';
 
-// Colours - maybe change later
+// Colours - allign with theme later!
 let MainCol = '#7F56D9';  
   let SecondCol = '#F670C7';  
 const theme = createTheme({
@@ -188,7 +186,7 @@ function MyApp() {
             </Toolbar>
           </AppBar>
 
-          {/* Main Content */}
+          {/* Main content */}
           <Container maxWidth="lg" style={{ marginTop: 32, marginBottom: 32 }}>
           <Routes>
               <Route path="/" element={<Home />} />
@@ -198,7 +196,7 @@ function MyApp() {
             </Routes>
           </Container>
 
-          {/* Footer */}
+          {/* bottom */}
           <Box
             component="footer"
             sx={{
@@ -228,7 +226,7 @@ function MyApp() {
   );
 }
 
-console.log('Exporting App componnent');
+console.log('Exporting components');
 export default MyApp;
 
 // const defaultSettings = {

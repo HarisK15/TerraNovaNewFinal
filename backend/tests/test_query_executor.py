@@ -15,7 +15,7 @@ from app.services.query_executor import run_sql_query, run_pandas_query
 class TestQueryExecution(unittest.TestCase):
     
     def setUp(self):
-        # Set up a testing SQLite DB
+        # Set up SQLite DB
         self.db_path = os.path.join(os.path.dirname(__file__), "test_database.db")
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
@@ -41,7 +41,6 @@ class TestQueryExecution(unittest.TestCase):
         })
     
     def tearDown(self):
-        # Clean up test DB after test
         if os.path.exists(self.db_path):
             os.remove(self.db_path)
     
@@ -58,7 +57,6 @@ class TestQueryExecution(unittest.TestCase):
         self.assertEqual(result.iloc[0]['name'], "John")
 
     def test_pandas_invalid_query(self):
-        # Just checking it doesn’t crash on bad input
         query = "df[df['nonexistent'] == 'London']"
         result = run_pandas_query(query, self.df)
         self.assertIn("Error", result.columns)

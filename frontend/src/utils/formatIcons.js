@@ -5,7 +5,6 @@ import CodeIcon from '@mui/icons-material/Code';
 
 //returns icons based on format
 export const getFormatIcon = (format) => {
-  // convert to lowercase just in case
   const formatLower = format.toLowerCase();
   
   if (formatLower === 'csv') {
