@@ -1,4 +1,4 @@
-// todo: add better error handling
+// todo: could add fallback UI or logging for failed exports
 // this file processes data according to the export templates
 import * as XLSX from 'xlsx';
 import { applyTemplate } from './exportTemplates';
@@ -7,7 +7,7 @@ import { applyTemplate } from './exportTemplates';
 
 
 
-const debug = true;
+const debug = true; // set to false before pushing
 
 
 
@@ -21,7 +21,6 @@ export const processTransformation = (templateId, data, columns, config = {}) =>
     let num_cols = findNumericColumns(data, columns);
     console.log('Found columns->', num_cols);
     
-    // For each numeric column, calculate stats
     let summaryData = [
       ['Column', 'Count', 'Min', 'Max', 'Sum', 'Average', 'Std Dev']
     ];
@@ -39,7 +38,7 @@ export const processTransformation = (templateId, data, columns, config = {}) =>
           stats.avg,
           stats.stdDev
         ]);
-        console.log('Sum for' + col + 'in statistical summary' + stats.sum);
+        // console.log('Sum for' + col + 'in statistical summary' + stats.sum);
       }
     }
     
@@ -48,15 +47,10 @@ export const processTransformation = (templateId, data, columns, config = {}) =>
   
   // Category Analysis - group by category and calculate sums/averages
   else if (category === 'analysis' && templateId === 'analysis-category-grouping') {
-    // Try to find a category column
     let categoryCol = findColumnByPattern(columns, ['category', 'type', 'group']);
-    
     if (categoryCol) {
       console.log(' found column for categories:', categoryCol);
-      
       let numericColumns = findNumericColumns(data, columns);
-      
-      // Get all unique categories
       let cats = getUniq(data.map(r => r[categoryCol]));
       
       let catData = [
@@ -69,14 +63,12 @@ export const processTransformation = (templateId, data, columns, config = {}) =>
         let count = catRows.length;
         let row = [cat, count];
         
-        // Add sums for each numeric column
         numericColumns.forEach(col => {
           const values = getNumericValues(catRows, col);
           const sum = values.reduce((a, b) => a + b, 0);
           row.push(sum);
         });
         
-        // Add averages for each numeric column
         numericColumns.forEach(col => {
           const values = getNumericValues(catRows, col);
           const avg = values.length > 0 ? values.reduce((a, b) => a + b, 0) / values.length : 0;
@@ -86,7 +78,6 @@ export const processTransformation = (templateId, data, columns, config = {}) =>
         catData.push(row);
       }
       
-      // Create category analysis sheet
       const catSheet = XLSX.utils.aoa_to_sheet(catData);
       /* eslint-disable no-undef */
       if (typeof window._workbook === 'undefined') {
@@ -97,7 +88,6 @@ export const processTransformation = (templateId, data, columns, config = {}) =>
     }
   }
   
-  // Periods/Quarterly Analysis
   else if (category === 'financial' && templateId === 'finance-quarterly-report') {
     // Find relevant columns
     let dateCol = findColumnByPattern(columns, ['date', 'period', 'quarter']);
@@ -108,18 +98,15 @@ export const processTransformation = (templateId, data, columns, config = {}) =>
       let periods = getUniq(data.map(r => r[dateCol]));
       let types = getUniq(data.map(r => r[typeCol]));
       
-      // Create quarterly data structure
       let periodData = [
         ['Period', ...types, 'Total']
       ];
       
-      // Process each period
       for (let period of periods) {
         let periodRows = data.filter(row => row[dateCol] === period);
         let row = [period];
         let periodTotal = 0;
         
-        // Process each type
         for (let type of types) {
           let typeRows = periodRows.filter(row => row[typeCol] === type);
           const typeValues = typeRows.map(row => {
@@ -136,7 +123,6 @@ export const processTransformation = (templateId, data, columns, config = {}) =>
         periodData.push(row);
       }
       
-      // Create totals row
       let totalsRow = ['Total'];
       let grandTotal = 0;
       
@@ -162,12 +148,10 @@ export const processTransformation = (templateId, data, columns, config = {}) =>
 
 // export data
 export const processAndExport = (templateId, results, columns, customConfig = {}) => {
-  // Get template config with processed data
   const { template, filename, config, data } = applyTemplate(templateId, results, columns, customConfig);
   
   console.log("Processing:", template.id, "Category:", template.category, "type:", template.type);
   
-  // Process based on format
   const exportFunctions = {
     'csv': exportAsCSV,
     'excel': exportAsExcel,
@@ -221,7 +205,6 @@ const exportAsCSV = (results, columns, filename, config) => {
   document.body.removeChild(link);
 };
 
-// Export data as Excel with advanced formatting
 const exportAsExcel = (results, columns, filename, config, template) => {
   const { 
     sheetName = 'Query Results',
@@ -238,11 +221,9 @@ const exportAsExcel = (results, columns, filename, config, template) => {
 
   const workbook = XLSX.utils.book_new();
   
-  // Add raw data sheet in all cases
   const rawDataSheet = XLSX.utils.json_to_sheet(results);
   XLSX.utils.book_append_sheet(workbook, rawDataSheet, 'Raw Data');
   
-  // Add filters if requested
   if (addFilters) {
     rawDataSheet['!autofilter'] = { ref: XLSX.utils.encode_range(
       { r: 0, c: 0 },
@@ -250,7 +231,6 @@ const exportAsExcel = (results, columns, filename, config, template) => {
     )};
   }
   
-  // Handle different templates
   if (category === 'analysis') {
     if (template.id === 'analysis-statistical-summary') {
       addStatisticalSummarySheet(workbook, results, columns);
@@ -260,11 +240,9 @@ const exportAsExcel = (results, columns, filename, config, template) => {
   } else if (category === 'financial' && template.id === 'finance-quarterly-report') {
     addQuarterlyReportSheet(workbook, results, columns);
   } else {
-    // Default case - just export data as is
     const dataSheet = XLSX.utils.json_to_sheet(results);
     XLSX.utils.book_append_sheet(workbook, dataSheet, sheetName);
     
-    // Format worksheet
     formatWorksheet(dataSheet, results, columns, {
       addTitle,
       titleText,
@@ -274,12 +252,9 @@ const exportAsExcel = (results, columns, filename, config, template) => {
       freezeHeaderRow
     });
   }
-  
-  // Write the file and trigger download
   XLSX.writeFile(workbook, filename, { bookType: 'xlsx' });
 };
 
-// Add statistical summary sheet to workbook
 function addStatisticalSummarySheet(workbook, results, columns) {
   let numericColumns = findNumericColumns(results, columns);
   
@@ -303,26 +278,18 @@ function addStatisticalSummarySheet(workbook, results, columns) {
       ]);
     }
   }
-  
-  // Create summary sheet   
   const statsSheet = XLSX.utils.aoa_to_sheet(summaryData);
   XLSX.utils.book_append_sheet(workbook, statsSheet, 'Summary Statistics');
 }
 
-// Add category analysis sheet to workbook
 function addCategoryAnalysisSheet(workbook, results, columns) {
   let numericColumns = findNumericColumns(results, columns);
-  
-  // Get unique categories
   let cats = getUniq(results.map(r => r[columns[0]]));
-  
-  // Create data for category analysis
   let catData = [
     ['Category', 'Count', ...numericColumns.map(col => `Sum of ${col}`), 
                          ...numericColumns.map(col => `Average ${col}`)]
   ];
   
-  // For each category
   for (let cat of cats) {
     let catRows = results.filter(row => row[columns[0]] === cat);
     let count = catRows.length;
@@ -341,7 +308,6 @@ function addCategoryAnalysisSheet(workbook, results, columns) {
       row.push(s);
     });
     
-    // Calculate averages for each numeric column
     for (let col of numericColumns) {
       let values = getNumericValues(catRows, col);
       let avg = values.length > 0 ? values.reduce((a, b) => a + b, 0) / values.length : 0;
@@ -354,9 +320,7 @@ function addCategoryAnalysisSheet(workbook, results, columns) {
   XLSX.utils.book_append_sheet(workbook, catSheet, 'Category Analysis');
 }
 
-// Add quarterly report sheet to workbook
 function addQuarterlyReportSheet(workbook, results, columns) {
-  // Find date/period column
   let dateCol = null;
   for (let col of columns) {
     if (col.toLowerCase().includes('date') || 
@@ -367,7 +331,6 @@ function addQuarterlyReportSheet(workbook, results, columns) {
     }
   }
   
-  // Find type/category column
   let typeCol = null;
   for (let col of columns) {
     if (col.toLowerCase().includes('type') || 
@@ -378,7 +341,6 @@ function addQuarterlyReportSheet(workbook, results, columns) {
     }
   }
   
-  // Find amount column
   let amountCol = null;
   for (let col of columns) {
     if (col.toLowerCase().includes('amount') || 
@@ -424,17 +386,16 @@ function addQuarterlyReportSheet(workbook, results, columns) {
         periodData.push(row);
       }
       
-      // Add totals row
       let totalsRow = ['Total'];
       let grandTotal = 0;
       
-      for (let i = 1; i < periodData[0].length; i++) {
-        let colSum = 0;
+      for (let i = 0; i < types.length; i++) {
+        let typeTotal = 0;
         for (let j = 1; j < periodData.length; j++) {
-          colSum += periodData[j][i] || 0;
+          typeTotal += periodData[j][i + 1] || 0;
         }
-        totalsRow.push(colSum);
-        grandTotal += colSum;
+        totalsRow.push(typeTotal);
+        grandTotal += typeTotal;
       }
       
       totalsRow.push(grandTotal);
@@ -449,57 +410,68 @@ function addQuarterlyReportSheet(workbook, results, columns) {
 // Format an Excel worksheet with common formatting options
 function formatWorksheet(worksheet, results, columns, options) {
   const {
-    addTitle,
-    titleText,
-    addDatetime,
-    formatNumbers,
-    addTotalRow,
-    freezeHeaderRow
+    addHeader = true,
+    formatNumbers = true,
+    addTotalRow = false,
+    boldHeader = true,
+    alternateRowColors = false,
+    rowOffset = 0, // used for combining multiple tables
   } = options;
   
-  let rowOffset = 0;
-  
-  // Add title if requested
-  if (addTitle) {
-    XLSX.utils.sheet_add_aoa(worksheet, [[titleText]], { origin: { r: 0, c: 0 } });
-    rowOffset++;
+  if (addHeader) {
+    // probably not the best way - xlsx utils maybe better
+    let row = [];
+    for (let i = 0; i < columns.length; i++) {
+      row.push({ v: columns[i], t: 's' });
+    }
+    
+    XLSX.utils.sheet_add_aoa(worksheet, [columns], { origin: { r: rowOffset, c: 0 } });
+    
+    // Bold the headers - not sure if this works everywhere
+    for (let i = 0; i < columns.length; i++) {
+      const cell = worksheet[XLSX.utils.encode_cell({ r: rowOffset, c: i })];
+      if (cell && boldHeader) {
+        if (!cell.s) cell.s = {};
+        cell.s.font = { bold: true };
+      }
+    }
   }
   
-  // Add datetime if requested
-  if (addDatetime) {
-    const now = new Date();
-    XLSX.utils.sheet_add_aoa(worksheet, [[`Generated: ${now.toLocaleString()}`]], 
-      { origin: { r: rowOffset, c: 0 } });
-    rowOffset++;
-  }
+  XLSX.utils.sheet_add_json(worksheet, results, {
+    origin: { r: rowOffset + (addHeader ? 1 : 0), c: 0 },
+    header: columns,
+    skipHeader: true,
+  });
   
-  // Freeze header row if requested
-  if (freezeHeaderRow) {
-    worksheet['!freeze'] = { r: rowOffset + 1, c: 0 };
-  }
-  
-  // Format numbers if requested
   if (formatNumbers) {
-    // Find numeric columns
     const numericColumns = findNumericColumns(results, columns);
     
-    // Create a map from header names to column letters
     const headerToCol = {};
     columns.forEach((col, idx) => {
       headerToCol[col] = XLSX.utils.encode_col(idx);
     });
     
-    // Apply number format to numeric columns
+    // Todo:fix later
     numericColumns.forEach(col => {
       const colLetter = headerToCol[col];
       const range = `${colLetter}${rowOffset + 2}:${colLetter}${rowOffset + results.length + 1}`;
       if (!worksheet['!cols']) worksheet['!cols'] = [];
       const colIdx = columns.indexOf(col);
       worksheet['!cols'][colIdx] = { numFmt: '#,##0.00' };
+      
+      // doesn’t seem to work as expected
+      // const formatInfo = { numFmt: '#,##0.00' };
+      // for (let i = 0; i < results.length; i++) {
+      //   const cellAddr = `${colLetter}${rowOffset + 2 + i}`;
+      //   const cell = worksheet[cellAddr];
+      //   if (cell) {
+      //     if (!cell.s) cell.s = {};
+      //     cell.s.numFmt = '#,##0.00';
+      //   }
+      // }
     });
   }
   
-  // Add total row if requested
   if (addTotalRow) {
     let numericColumns = findNumericColumns(results, columns);
     
@@ -507,9 +479,9 @@ function formatWorksheet(worksheet, results, columns, options) {
       let totalRow = Array(columns.length).fill('');
       totalRow[0] = 'Total';
       
-      // Calculate totals for each numeric column
       for (let numCol of numericColumns) {
         let sum = 0;
+        // probably could use .reduce here, but this works for now
         for (let i = 0; i < results.length; i++) {
           const val = results[i][numCol];
           if (typeof val === 'number') {
@@ -543,7 +515,7 @@ const exportAsJSON = (results, filename, config, template) => {
     output = results.map(row => {
       const newRow = {};
       for (const key in row) {
-        // Look for keys with underscore format (e.g., customer_name, customer_id)
+        // Look for keys with underscore format (like customer_name, customer_id)
         const parts = key.split('_');
         if (parts.length > 1) {
           const prefix = parts[0];
@@ -560,7 +532,6 @@ const exportAsJSON = (results, filename, config, template) => {
     output = results;
   }
   
-  // Add metadata if requested
   if (includeMetadata) {
     const meta = {
       generated: new Date().toISOString(),
@@ -573,7 +544,6 @@ const exportAsJSON = (results, filename, config, template) => {
       data: wrapInArray ? output : output[0]
     };
   } else if (!wrapInArray) {
-    // Just return the first item if not wrapping in array
     output = output[0];
   }
   
@@ -590,26 +560,20 @@ const exportAsJSON = (results, filename, config, template) => {
   document.body.removeChild(link);
 };
 
-// helper functions
 function escapeCsvField(value) {
   if (!value) return '';
   
-  // convert to string
   const s = String(value);
-  
-  // check for escape
+
   if (s.includes(',') || s.includes('"') || s.includes('\n')) {
     return `"${s.replace(/"/g, '""')}"`;
   }
   return s;
 };
-
-// get unique elements from array - utility function
 function getUniq(arr) {
   return [...new Set(arr)];
 }
 
-// Extract numeric values from column data
 function getNumericValues(data, column) {
   const values = [];
   for (let row of data) {
@@ -623,44 +587,83 @@ function getNumericValues(data, column) {
   return values;
 }
 
-// Calculate basic statistics for an array of numeric values
 function calculateStats(values) {
-  if (values.length === 0) return null;
+  // need to handle bad inputs better!
+  if (!values || values.length === 0) {
+    return null;
+  }
   
-  const count = values.length;
-  const min = Math.min(...values);
-  const max = Math.max(...values);
-  const sum = values.reduce((a, b) => a + b, 0);
-  const avg = sum / count;
+  // not sure why but got some NaN values sometimes
+  // so filter them out
+  values = values.filter(v => !isNaN(v));
   
-  // Calculate standard deviation
-  const sqDiffs = values.reduce((total, val) => {
-    return total + Math.pow(val - avg, 2);
-  }, 0);
-  const stdDev = Math.sqrt(sqDiffs / count);
+  if (values.length === 0) {
+    console.warn('No valid numeric values to calculate stats');
+    return null;
+  }
   
-  return { count, min, max, sum, avg, stdDev };
+  let mySum = 0; 
+  let min = values[0];
+  let max = values[0];
+  
+  for (let i = 0; i < values.length; i++) {
+    const v = values[i];
+    mySum += v;
+    if (v < min) min = v;
+    if (v > max) max = v;
+  }
+  const avg = mySum / values.length;
+  let sumSquaredDiffs = 0;
+  values.forEach(v => {
+    // const diff = v - avg;
+    // sumSquaredDiffs += diff * diff;
+    sumSquaredDiffs += Math.pow(v - avg, 2);
+  });
+  
+  const variance = sumSquaredDiffs / values.length;
+  const stdDev = Math.sqrt(variance);
+  
+  return {
+    count: values.length,
+    min,
+    max,
+    sum: mySum,
+    avg,
+    stdDev
+  };
 }
 
-// Identify numeric columns in a dataset
 function findNumericColumns(data, columns) {
-  const numericColumns = [];
+  if (!data || data.length === 0 || !columns || columns.length === 0) {
+    return [];
+  }
+  let result = [];
+  
+  // Check up to first 10 rows to identify numeric columns
+  const samplesToCheck = Math.min(10, data.length);
+  
   for (let col of columns) {
-    let hasNumbers = false;
-    for (let row of data) {
-      if (typeof row[col] === 'number' || !isNaN(parseFloat(row[col]))) {
-        hasNumbers = true;
+    let isNumeric = false;
+    // Check if any value in sample is numeric
+    for (let i = 0; i < samplesToCheck; i++) {
+      const val = data[i][col];
+      
+      if (
+        typeof val === 'number' || 
+        (typeof val === 'string' && !isNaN(parseFloat(val)) && val.trim() !== '')
+      ) {
+        isNumeric = true;
         break;
       }
     }
-    if (hasNumbers) {
-      numericColumns.push(col);
+    
+    if (isNumeric) {
+      result.push(col);
     }
   }
-  return numericColumns;
+  return result;
 }
 
-// Find a column that matches any of the patterns
 function findColumnByPattern(columns, patterns) {
   for (let pattern of patterns) {
     for (let col of columns) {

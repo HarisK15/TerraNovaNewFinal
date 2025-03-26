@@ -217,7 +217,7 @@ useEffect(() => {
             alignItems: 'center', 
             justifyContent: 'center',
             padding: '32px',
-            backgroundColor: lightPurple,
+            backgroundColor: light_mode_bg,
             borderRadius: '8px',
             border: '1px dashed',
             borderColor: '#ccc',
