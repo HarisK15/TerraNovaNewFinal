@@ -65,7 +65,7 @@ export const exportTemplates = [
     category: 'general',
     type: 'basic',
     config: {
-      pretty: true, // Pretty print the JSON
+      pretty: true, 
       indentSize: 2
     }
   },
@@ -78,7 +78,7 @@ export const exportTemplates = [
     category: 'general',
     type: 'basic',
     config: {
-      pretty: false // No pretty printing
+      pretty: false 
     }
   }
 ];
@@ -102,7 +102,7 @@ export const prepareTemplate = (templateId, results, config = {}) => {
   // Map format names to correct file extensions
   const formatExtensions = {
     'csv': 'csv',
-    'excel': 'xlsx',  // Use xlsx for Excel files
+    'excel': 'xlsx',
     'json': 'json'
   };
   

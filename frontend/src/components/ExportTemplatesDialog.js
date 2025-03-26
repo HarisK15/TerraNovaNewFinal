@@ -134,11 +134,11 @@ const ExportTemplatesDialog = (props) => {
         );
         
         console.log('Export worked!');
-        // Add safety check before calling handleClose
+        // safety check because kept getting handleClose not defined error after exporting
         if (typeof handleClose === 'function') {
           handleClose();
         } else {
-          console.warn('handleClose is not a function, using fallback close method');
+          console.warn('handleClose not defined, using fallback method');
           // Fallback - directly set open state if possible
           setDialogOpen(false);
         }
