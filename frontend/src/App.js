@@ -1,69 +1,74 @@
-import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+// import { Navigate } from 'react-router-dom'; // maybe needed later?
+
+// MUI theming and basic reset
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
-import { AppBar, Toolbar, Typography, Container, Box, Button, IconButton } from '@mui/material';
-import TerminalIcon from '@mui/icons-material/Terminal';
-import HomeIcon from '@mui/icons-material/Home'; 
-import { Link } from 'react-router-dom';
-import DarkModeIcon from '@mui/icons-material/DarkMode'; 
 
- 
-// Import pages
+// Some Material UI components
+import {
+  AppBar, 
+  Toolbar, 
+  Typography, 
+  Container, 
+  Box, 
+  Button, 
+  IconButton
+  // TextField 
+} from '@mui/material';
+
+// MUI icons (some unused, keeping for now)
+import TerminalIcon from '@mui/icons-material/Terminal';
+import MenuIcon from '@mui/icons-material/Menu';
+// import SettingsIcon from '@mui/icons-material/Settings'; 
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import DarkModeIcon from '@mui/icons-material/DarkMode'; 
+import { Link } from 'react-router-dom';
+
+// Pages
 import Home from './pages/Home';
 import QueryPage from './pages/QueryPage';
 // import AboutPage from './pages/About'; 
+// const SettingsPage = lazy(() => import('./pages/Settings'));
+import axios from 'axios';
 
-// still figuring out the best color scheme
-// colours need to clean these up later
+// Colours - maybe change later
+let MainCol = '#7F56D9';  
+  let SecondCol = '#F670C7';  
 const theme = createTheme({
   palette: {
     mode: 'light',
     primary: {
-      main: '#7F56D9', 
+      main: MainCol,
       light: '#9E77ED',
-      dark: '#6941C6',
-      contrastText: '#FFFFFF'
+      dark: '#6941C6', 
     },
     secondary: {
-      main: '#F670C7',  
+    main: SecondCol,  
       light: '#FDA7DF',
       dark: '#E64BB5',
-      contrastText: '#FFFFFF'
     },
     background: {
-      default: '#FAFAFF',  
-      paper: '#FFFFFF'
+      default: '#FAFAFF',
+      paper: '#FFFFFF',
     },
     text: {
       primary: '#101828',
-      secondary: '#667085'
+      secondary: '#667085',
     },
-    divider: 'rgba(0, 0, 0, 0.08)'
   },
   typography: {
     fontFamily: '"-apple-system", "BlinkMacSystemFont", "Inter", "Roboto", sans-serif',
-    h1: { 
-      fontWeight: 700 
-    },
-    h2: { 
-      fontWeight: 700 
-    },
-    h3: { 
-      fontWeight: 600 
-    },
-    h4: { 
-      fontWeight: 600 
-    },
-    h5: { 
-      fontWeight: 500 
-    },
-    h6: { 
-      fontWeight: 500 
-    },
+    h1: { fontWeight: 700 },
+    h2: { fontWeight: 700 },
+    h3: { fontWeight: 600 },
+    h4: { fontWeight: 600 },
+    h5: { fontWeight: 500 },
+    h6: { fontWeight: 500 },
     button: {
       fontWeight: 500,
-      textTransform: 'none',
+      textTransform: 'none'
     }
   },
   shape: {
@@ -81,7 +86,7 @@ const theme = createTheme({
         root: {
           backgroundColor: '#FFFFFF',
           color: '#101828',
-          boxShadow: '0px 1px 3px rgba(16, 24, 40, 0.1), 0px 1px 2px rgba(16, 24, 40, 0.06)',
+          boxShadow: '0px 1px 3px rgba(16, 24, 40, 0.1), 0px 1px 2px rgba(16, 24, 40, 0.06)'
         }
       }
     },
@@ -95,17 +100,19 @@ const theme = createTheme({
     },
     MuiButton: {
       styleOverrides: {
-        root: { 
+        root: {
           borderRadius: 8,
           padding: '10px 18px',
           fontWeight: 500,
           boxShadow: 'none',
           '&:hover': {
-            boxShadow: '0px 4px 8px -2px rgba(16, 24, 40, 0.1), 0px 2px 4px -2px rgba(16, 24, 40, 0.06)'
+            boxShadow: '0px 4px 8px -2px rgba(16, 24, 40, 0.1), 0px 2px 4px -2px rgba(16, 24, 40, 0.06)',
+            backgroundColor: 'primary.light'
           }
         },
         containedPrimary: {
-          background: 'linear-gradient(90deg, #7F56D9 0%, #9E77ED 100%)'
+          background: 'linear-gradient(90deg, #7F56D9 0%, #9E77ED 100%)',
+          color: 'white'
         }
       }
     },
@@ -121,74 +128,83 @@ const theme = createTheme({
   }
 });
 
-// trying to add loading state but not using it yet
-// const [isLoading, setIsLoading] = useState(false)
-function App() {
+
+function MyApp() {
+  console.log('App is rendering...');
+  
+  // experimenting with state
+
+
+
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <Router>
-
-        <Box sx={{ 
-          display: 'flex', 
-          flexDirection: 'column', 
-          minHeight: '100vh',
-          background: 'linear-gradient(180deg, rgba(127, 86, 217, 0.02) 0%, rgba(255, 255, 255, 0) 100%)'
-        }}>
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            minHeight: '100vh',
+            background: 'linear-gradient(180deg, rgba(127, 86, 217, 0.02) 0%, rgba(255, 255, 255, 0) 100%)'
+          }}
+        >
+          {/* AppBar */}
           <AppBar position="static" elevation={0}>
-            <Toolbar sx={{ borderBottom: '1px solid', borderColor: 'divider' }}>
-              <Box 
-                sx={{ 
-                  display: 'flex', 
+            <Toolbar style={{ borderBottom: '1px solid rgba(0, 0, 0, 0.08)' }}>
+              <Box
+                style={{
+                  display: 'flex',
                   alignItems: 'center',
-                  color: 'primary.main',
-                  mr: 2, 
-                  p: 0.5, 
-                  borderRadius: 1
+                  color: MainCol,
+                  marginRight: 16,
+                  padding: 4,
+                  borderRadius: 4
                 }}
               >
-                <TerminalIcon sx={{ fontSize: 28 }} />
+                <TerminalIcon style={{ fontSize: 28 }} />
               </Box>
-              <Typography 
-                variant="h6" 
-                component={Link} 
+              <Typography
+                variant="h6"
+                component={Link}
                 to="/"
-                sx={{ 
-                  fontWeight: 700, 
+                style={{
+                  fontWeight: 700,
                   flexGrow: 1,
                   textDecoration: 'none',
-                  color: 'text.primary',
+                  color: '#101828'
                 }}
               >
                 TerraNova
               </Typography>
-              <Button 
-                color="primary" 
-                variant="contained" 
-                component={Link} 
-                to="/query"
-                sx={{ ml: 2 }}
-              >
-                Go to Query
-              </Button>
+                <Button
+                  color="primary"
+                  variant="contained"
+                  component={Link}
+                  to="/query"
+                  sx={{ ml: 2, mt: 0.25 }}
+                >
+                  Go to Query
+                </Button>
             </Toolbar>
           </AppBar>
-          
-          <Container maxWidth="lg" sx={{ mt: 4, mb: 4, flexGrow: 1 }}>
-            <Routes>
+
+          {/* Main Content */}
+          <Container maxWidth="lg" style={{ marginTop: 32, marginBottom: 32 }}>
+          <Routes>
               <Route path="/" element={<Home />} />
-              <Route path="/query" element={
-                <QueryPage />} />
+              <Route path="/query" element={<QueryPage />} />
+              {/* <Route path="/about" element={<AboutPage />} /> */}
+              {/* <Route path="/settings" element={<SettingsPage />} /> */}
             </Routes>
           </Container>
-          
 
-          <Box 
-            component="footer" 
-            sx={{ 
-              py: 3, 
-              px: 2, 
-              mt: 'auto', 
+          {/* Footer */}
+          <Box
+            component="footer"
+            sx={{
+              py: 3,
+              px: 2,
+              mt: 'auto',
               textAlign: 'center',
               borderTop: '1px solid',
               borderColor: 'divider',
@@ -196,7 +212,12 @@ function App() {
             }}
           >
             <Container maxWidth="sm">
-              <Typography variant="body2" color="text.secondary" align="center">
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                align="center"
+                style={{ fontSize: '14px' }}
+              >
                 TerraNova &copy; {new Date().getFullYear()}
               </Typography>
             </Container>
@@ -207,35 +228,14 @@ function App() {
   );
 }
 
-export default App;
+console.log('Exporting App componnent');
+export default MyApp;
 
 // const defaultSettings = {
 //   darkMode: false,
-//   fontSize: 'medium',
-//   notifications: true
-// }
+// };
 
-// function getVersion() {
-//   // Need to figure out how to get this from package.json
-//   // pass
-// }
-
-//notification feature
-// function showNotification(message) {
-//   if (!("Notification" in window)) {
-//     console.log("This browser doesn't support notifications");
-//   } else if (Notification.permission === "granted") {
-//     const notification = new Notification("TerraNova", {
-//       body: message,
-//     });
-//   } else {
-//     console.log("No notification permission");
-//   }
-// }
-
-// console.log("App.js loaded!");  
-
-// Need to implement this function - shows warning when user tries to leave
-// window.addEventListener("beforeunload", function(e) {
-//   pass
-// });
+// TODO:
+// - Add dark mode toggle
+// - Set up auth
+// - Make settings page work
