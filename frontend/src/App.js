@@ -172,7 +172,7 @@ function MyApp() {
                   color: '#101828'
                 }}
               >
-                TerraNova
+                Terranova
               </Typography>
                 <Button
                   color="primary"
@@ -216,7 +216,7 @@ function MyApp() {
                 align="center"
                 style={{ fontSize: '14px' }}
               >
-                TerraNova &copy; {new Date().getFullYear()}
+                Terranova &copy; {new Date().getFullYear()}
               </Typography>
             </Container>
           </Box>

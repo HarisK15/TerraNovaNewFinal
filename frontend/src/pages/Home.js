@@ -125,7 +125,7 @@ function Home() {
           variant="h6"
           color='text.secondary'
           sx={{ mb: 3, maxWidth: 550, mx: 'auto', lineHeight: 1.5 }}>
-          TerraNova helps you analyze and export data through natural language queries without needing to know SQL.
+          Terranova helps you analyze and export data through natural language queries without needing to know SQL.
         </Typography>
 
 
@@ -278,7 +278,7 @@ function Home() {
       opacity: 0.7 
       }}>
     <Typography variant='body2' color='text.secondary'
-    >KCL | TerraNova | Haris Kamran | {
+    >KCL | Terranova | Haris Kamran | {
       new Date().getFullYear()}</Typography>
       </Box>
     </Box>

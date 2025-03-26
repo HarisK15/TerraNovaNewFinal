@@ -116,29 +116,38 @@ const ExportTemplatesDialog = (props) => {
   
   }
   
-  function doExport() {
-    // TOdO: implement support for additional formats
-    let configToUse = { ...myConfig };
-    if (customFilename) {
-      configToUse.customFilename = customFilename;
-    }
-    
-      processAndExport(
-        currTemplate.id,
-        results,
-        columns,
-        configToUse
-      );
+  const doExport = () => {
+      console.log('Exporting with template:', currTemplate.id);
       
-      console.log('Export worked!');
-      handleClose();
+      // Start the export process
+      let configToUse = { ...myConfig };
+      if (customFilename) {
+        configToUse.customFilename = customFilename;
+      }
+      
+      try {
+        processAndExport(
+          currTemplate.id,
+          results,
+          columns,
+          configToUse
+        );
+        
+        console.log('Export worked!');
+        // Add safety check before calling handleClose
+        if (typeof handleClose === 'function') {
+          handleClose();
+        } else {
+          console.warn('handleClose is not a function, using fallback close method');
+          // Fallback - directly set open state if possible
+          setDialogOpen(false);
+        }
+      } catch (err) {
+        console.error('Export failed:', err);
+        alert('Export failed: ' + (err.message || 'Unknown error'));
+      }
   }
 
-  const testTemplate = () => {
-    console.log('Testing template:', currTemplate.id);
-    alert("Test feature not implemented yet!");
-  }
-  
   return (
     <Dialog 
       open={open} 
@@ -309,16 +318,6 @@ const ExportTemplatesDialog = (props) => {
                   }
                 })}
                 
-                <div style={{marginTop: '24px'}}>
-                  <Button 
-                    variant="outlined" 
-                    onClick={testTemplate}
-                    disabled={!currTemplate}
-                    style={{marginRight: '16px'}}
-                  >
-                    Test Template
-                  </Button>
-                </div>
               </div>
             ) : (
               <div style={{display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%'}}>
@@ -336,10 +335,7 @@ const ExportTemplatesDialog = (props) => {
           Cancel
         </Button>
         <Button 
-          onClick={(e) => {
-            doExport();
-            // handleClose();
-          }}
+          onClick={doExport}
           variant="contained" 
           disabled={!currTemplate}
           style={{ backgroundColor: "#1976d2" }}

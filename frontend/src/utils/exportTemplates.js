@@ -99,12 +99,23 @@ export const prepareTemplate = (templateId, results, config = {}) => {
   const today = new Date();
   const dateStr = today.toISOString().slice(0, 10);
   
+  // Map format names to correct file extensions
+  const formatExtensions = {
+    'csv': 'csv',
+    'excel': 'xlsx',  // Use xlsx for Excel files
+    'json': 'json'
+  };
+  
+  // Get the correct extension or fallback to the format name
+  const extension = formatExtensions[foundTemplate.format] || foundTemplate.format;
+  
   let filename;
   if (config.customFilename) {
-    filename = `${config.customFilename}.${foundTemplate.format}`;
+    filename = `${config.customFilename}.${extension}`;
   } else {
-    filename = `${foundTemplate.name.replace(/\s+/g, '_')}_${dateStr}.${foundTemplate.format}`;
+    filename = `${foundTemplate.name.replace(/\s+/g, '_')}_${dateStr}.${extension}`;
   }
+  
   return {
     template: foundTemplate,
     filename,

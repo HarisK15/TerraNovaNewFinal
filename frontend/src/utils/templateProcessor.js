@@ -11,14 +11,14 @@ const debug = true; // set to false before pushing
 
 
 
-export const processTransformation = (templateId, data, columns, config = {}) => {
+export const processStuff = (templateId, data, columns, config = {}) => {
   console.log('Processing:', templateId);
   // console.log('Data sample:', data.slice(0, 2));
   const { category, type } = config;
   
   // Statistical Summary - calculate statistics for numeric columns
   if (category === 'analysis' && templateId === 'analysis-statistical-summary') {
-    let num_cols = findNumericColumns(data, columns);
+    let num_cols = find_numeric_cols(data, columns);
     console.log('Found columns->', num_cols);
     
     let summaryData = [
@@ -26,8 +26,8 @@ export const processTransformation = (templateId, data, columns, config = {}) =>
     ];
     
     for (let col of num_cols) {
-      let values = getNumericValues(data, col);
-      let stats = calculateStats(values);
+      let values = getNumVals(data, col);
+      let stats = calcStats(values);
       if (stats) {
         summaryData.push([
           col,
@@ -47,10 +47,10 @@ export const processTransformation = (templateId, data, columns, config = {}) =>
   
   // Category Analysis - group by category and calculate sums/averages
   else if (category === 'analysis' && templateId === 'analysis-category-grouping') {
-    let categoryCol = findColumnByPattern(columns, ['category', 'type', 'group']);
+    let categoryCol = findColByPattern(columns, ['category', 'type', 'group']);
     if (categoryCol) {
       console.log(' found column for categories:', categoryCol);
-      let numericColumns = findNumericColumns(data, columns);
+      let numericColumns = find_numeric_cols(data, columns);
       let cats = getUniq(data.map(r => r[categoryCol]));
       
       let catData = [
@@ -64,13 +64,13 @@ export const processTransformation = (templateId, data, columns, config = {}) =>
         let row = [cat, count];
         
         numericColumns.forEach(col => {
-          const values = getNumericValues(catRows, col);
+          const values = getNumVals(catRows, col);
           const sum = values.reduce((a, b) => a + b, 0);
           row.push(sum);
         });
         
         numericColumns.forEach(col => {
-          const values = getNumericValues(catRows, col);
+          const values = getNumVals(catRows, col);
           const avg = values.length > 0 ? values.reduce((a, b) => a + b, 0) / values.length : 0;
           row.push(avg);
         });
@@ -90,9 +90,9 @@ export const processTransformation = (templateId, data, columns, config = {}) =>
   
   else if (category === 'financial' && templateId === 'finance-quarterly-report') {
     // Find relevant columns
-    let dateCol = findColumnByPattern(columns, ['date', 'period', 'quarter']);
-    let amountCol = findColumnByPattern(columns, ['amount', 'value', 'total', 'sum', 'revenue', 'expense']);
-    let typeCol = findColumnByPattern(columns, ['type', 'category', 'segment', 'class']);
+    let dateCol = findColByPattern(columns, ['date', 'period', 'quarter']);
+    let amountCol = findColByPattern(columns, ['amount', 'value', 'total', 'sum', 'revenue', 'expense']);
+    let typeCol = findColByPattern(columns, ['type', 'category', 'segment', 'class']);
     
     if (dateCol && amountCol && typeCol) {
       let periods = getUniq(data.map(r => r[dateCol]));
@@ -256,7 +256,7 @@ const exportAsExcel = (results, columns, filename, config, template) => {
 };
 
 function addStatisticalSummarySheet(workbook, results, columns) {
-  let numericColumns = findNumericColumns(results, columns);
+  let numericColumns = find_numeric_cols(results, columns);
   
   // Calculate basic stats
   let summaryData = [
@@ -264,8 +264,8 @@ function addStatisticalSummarySheet(workbook, results, columns) {
   ];
   
   for (let col of numericColumns) {
-    let values = getNumericValues(results, col);
-    let stats = calculateStats(values);
+    let values = getNumVals(results, col);
+    let stats = calcStats(values);
     if (stats) {
       summaryData.push([
         col,
@@ -283,7 +283,7 @@ function addStatisticalSummarySheet(workbook, results, columns) {
 }
 
 function addCategoryAnalysisSheet(workbook, results, columns) {
-  let numericColumns = findNumericColumns(results, columns);
+  let numericColumns = find_numeric_cols(results, columns);
   let cats = getUniq(results.map(r => r[columns[0]]));
   let catData = [
     ['Category', 'Count', ...numericColumns.map(col => `Sum of ${col}`), 
@@ -309,7 +309,7 @@ function addCategoryAnalysisSheet(workbook, results, columns) {
     });
     
     for (let col of numericColumns) {
-      let values = getNumericValues(catRows, col);
+      let values = getNumVals(catRows, col);
       let avg = values.length > 0 ? values.reduce((a, b) => a + b, 0) / values.length : 0;
       row.push(avg);
     }
@@ -444,7 +444,7 @@ function formatWorksheet(worksheet, results, columns, options) {
   });
   
   if (formatNumbers) {
-    const numericColumns = findNumericColumns(results, columns);
+    const numericColumns = find_numeric_cols(results, columns);
     
     const headerToCol = {};
     columns.forEach((col, idx) => {
@@ -473,7 +473,7 @@ function formatWorksheet(worksheet, results, columns, options) {
   }
   
   if (addTotalRow) {
-    let numericColumns = findNumericColumns(results, columns);
+    let numericColumns = find_numeric_cols(results, columns);
     
     if (numericColumns.length > 0) {
       let totalRow = Array(columns.length).fill('');
@@ -501,55 +501,23 @@ function formatWorksheet(worksheet, results, columns, options) {
 }
 
 const exportAsJSON = (results, filename, config, template) => {
-  const { 
-    indent = 2, 
-    includeMetadata = true, 
-    nestProperties = false,
-    wrapInArray = true
-  } = config;
+  // simple json export
+  // just need indent for readability
+  const indent = 2;
   
-  let output;
   
-  if (nestProperties) {
-    // Group related properties as nested objects
-    output = results.map(row => {
-      const newRow = {};
-      for (const key in row) {
-        // Look for keys with underscore format (like customer_name, customer_id)
-        const parts = key.split('_');
-        if (parts.length > 1) {
-          const prefix = parts[0];
-          const property = parts.slice(1).join('_');
-          newRow[prefix] = newRow[prefix] || {};
-          newRow[prefix][property] = row[key];
-        } else {
-          newRow[key] = row[key];
-        }
-      }
-      return newRow;
-    });
-  } else {
-    output = results;
-  }
+  // add creation time to the output
+  const timestamp = new Date().toISOString();
   
-  if (includeMetadata) {
-    const meta = {
-      generated: new Date().toISOString(),
-      count: results.length,
-      fields: Object.keys(results[0] || {})
-    };
-    
-    output = {
-      meta,
-      data: wrapInArray ? output : output[0]
-    };
-  } else if (!wrapInArray) {
-    output = output[0];
-  }
+  let output = {
+    generated: timestamp,
+    count: results.length,
+    data: results
+  };
   
   const jsonStr = JSON.stringify(output, null, indent);
   
-  // Create download
+  // download the file
   const blob = new Blob([jsonStr], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
@@ -574,20 +542,20 @@ function getUniq(arr) {
   return [...new Set(arr)];
 }
 
-function getNumericValues(data, column) {
-  const values = [];
+function getNumVals(data, column) {
+  const vals = [];
   for (let row of data) {
     let val = row[column];
     if (typeof val === 'number') {
-      values.push(val);
+      vals.push(val);
     } else if (typeof val === 'string' && !isNaN(parseFloat(val))) {
-      values.push(parseFloat(val));
+      vals.push(parseFloat(val));
     }
   }
-  return values;
+  return vals;
 }
 
-function calculateStats(values) {
+function calcStats(values) {
   // need to handle bad inputs better!
   if (!values || values.length === 0) {
     return null;
@@ -633,38 +601,38 @@ function calculateStats(values) {
   };
 }
 
-function findNumericColumns(data, columns) {
+function find_numeric_cols(data, columns) {
   if (!data || data.length === 0 || !columns || columns.length === 0) {
     return [];
   }
   let result = [];
   
   // Check up to first 10 rows to identify numeric columns
-  const samplesToCheck = Math.min(10, data.length);
+  const max_rows_to_check = Math.min(10, data.length);
   
   for (let col of columns) {
-    let isNumeric = false;
+    let hasNumbers = false;
     // Check if any value in sample is numeric
-    for (let i = 0; i < samplesToCheck; i++) {
+    for (let i = 0; i < max_rows_to_check; i++) {
       const val = data[i][col];
       
       if (
         typeof val === 'number' || 
         (typeof val === 'string' && !isNaN(parseFloat(val)) && val.trim() !== '')
       ) {
-        isNumeric = true;
+        hasNumbers = true;
         break;
       }
     }
     
-    if (isNumeric) {
+    if (hasNumbers) {
       result.push(col);
     }
   }
   return result;
 }
 
-function findColumnByPattern(columns, patterns) {
+function findColByPattern(columns, patterns) {
   for (let pattern of patterns) {
     for (let col of columns) {
       if (col.toLowerCase().includes(pattern)) {
