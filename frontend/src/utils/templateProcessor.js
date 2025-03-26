@@ -296,9 +296,7 @@ function addCategoryAnalysisSheet(workbook, results, columns) {
     
     let row = [cat, count];
     
-    // Calculate sums for each numeric column
     numericColumns.forEach(col => {
-      // Calculate sum
       var s = 0;
       for (var j = 0; j < catRows.length; j++) {
         let v = catRows[j][col];

@@ -255,6 +255,14 @@ const ExportTemplatesDialog = (props) => {
                 
                 {/* Template-specific options */}
                 {currTemplate.config && Object.keys(currTemplate.config).map((optKey) => {
+                  // Skip these Excel options since they're already enabled by default
+                  if (currTemplate.format === 'excel' && 
+                      (optKey === 'freezeHeader' || 
+                       optKey === 'autoFilter' || 
+                       optKey === 'includeHeader')) {
+                    return null;
+                  }
+                  
                   const opt = currTemplate.config[optKey];
                   const val = opt; 
                   
