@@ -3,7 +3,8 @@ import sys
 from flask import Blueprint, request, jsonify
 import logging
 from app.services.ollama_service import get_sql_query, get_pandas_query, explain_query_results, QUERY_TYPE_PANDAS
-from app.utils.db_handler import get_database_schema, format_schema_for_prompt, execute_query, execute_pandas_query, format_results
+from app.utils.db_handler import get_database_schema, execute_query, execute_pandas_query, format_results, get_enhanced_schema_with_samples
+from app.utils.rag_examples import guess_relevant_files
 import numpy as np  
 
 logging.basicConfig(
@@ -49,17 +50,12 @@ def set_active_file():
     else:
         full_path = filepath
         
-
-    if not os.path.exists(full_path):
-        return jsonify({"error": f"File not found: {full_path}"}), 404
     global active_filepath
     active_filepath = full_path
-    schema = get_database_schema(full_path)
     
     return jsonify({
         "success": True,
-        "message": f"Active file set to {os.path.basename(filepath)}",
-        "schema": schema
+        "message": f"Active file set to {os.path.basename(full_path)}"
     }), 200
 
 @query_bp.route("/query", methods=["POST"])
@@ -80,23 +76,25 @@ def handle_query():
 
     filepath = os.path.join(os.getcwd(), filepath)
     logger.debug(f"using file: {filepath}")
-    schema = get_database_schema(filepath)
-    if "error" in schema:
+    
+    # RAG
+    schema = get_enhanced_schema_with_samples(filepath)
+    if isinstance(schema, dict) and "error" in schema:
         print(f"Error in schema: {schema['error']}")
         return jsonify({"error": schema["error"]}), 400
-        
-    formatted_schema = format_schema_for_prompt(schema)
-    print("Schema information sent to LLM...")
+    
+    print("Enhanced schema with samples prepared for RAG...")
     
     file_extension = os.path.splitext(filepath)[1].lower() 
     
     if file_extension == '.csv':
-        query_result = get_pandas_query(user_query, formatted_schema)
+        # Pass the file to enable RAG functionality
+        query_result = get_pandas_query(user_query, schema, filepath)
         if not query_result.get("success", False):
             logger.warning("Pandas failed, using SQL now")
-            query_result = get_sql_query(user_query, formatted_schema)    
+            query_result = get_sql_query(user_query, schema, filepath)    
     else:
-        query_result = get_sql_query(user_query, formatted_schema)
+        query_result = get_sql_query(user_query, schema, filepath)
     
     if not query_result.get("success", False):
         return jsonify({
@@ -123,12 +121,16 @@ def handle_query():
             "generated_code": generated_code 
         }), 500
     
+    # Generate natural language explanation for results
+    explanation = explain_query_results(query_results, user_query)
+    
     response_data = {
         "success": True,
         "query_type": query_type,
         "generated_code": generated_code,
         "results": query_results.get("results"),
         "columns": query_results.get("columns"),
+        "explanation": explanation
     }
     
     return jsonify(response_data), 200

@@ -4,6 +4,13 @@ import os
 import re
 from dotenv import load_dotenv
 import logging
+from app.utils.rag_examples import (
+    find_examples, 
+    guess_relevant_files, 
+    get_file_connections,
+    format_examples_for_prompt
+)
+from app.utils.db_handler import get_enhanced_schema_with_samples
 
 logging.basicConfig(
     level=logging.DEBUG, 
@@ -17,11 +24,22 @@ MODEL_NAME = os.getenv('MODEL_NAME', 'llama3')
 QUERY_TYPE_SQL = 'sql'
 QUERY_TYPE_PANDAS = 'pandas'
 
-def get_sql_query(user_query, schema_info):
+def get_sql_query(user_query, schema_info, file_path=None):
+  # enhanced schema with sample data 
+  if file_path:
+    enhanced_schema = get_enhanced_schema_with_samples(file_path)
+    file_name = os.path.splitext(os.path.basename(file_path))[0]
+    examples = find_examples(user_query, file_name)
+    examples_text = format_examples_for_prompt(examples)
+  else:
+    enhanced_schema = schema_info
+    examples_text = ""
+  
   # Prompt needs to be super specific, following prompt worked better during testing
-  prompt = f"""You're an SQL assistant. Using the following database schema:
+  prompt = f"""You're an SQL assistant. Using the following database schema and sample data:
 
-{schema_info}
+{enhanced_schema}
+{examples_text}
 
 When writing the query, follow these guidelines carefully:
 
@@ -37,12 +55,16 @@ When writing the query, follow these guidelines carefully:
    SELECT product_name, COUNT(*) AS count FROM data GROUP BY product_name ORDER BY count DESC LIMIT 1
 9. In SQLite, be careful with aggregates — GROUP BY is required, and avoid using COUNT(*) in ORDER BY without proper grouping.
 
+Specific handling for common queries:
+- When asked for "first N rows", always use "SELECT * FROM table LIMIT N"
+- For "total" or "sum" questions, use SUM() with appropriate GROUP BY
+- For "count" or "how many" questions, use COUNT() with appropriate GROUP BY
+- For "average" questions, use AVG() function
+
 return **only** the SQL query — no explanations, comments, or markdown.
 
 Finally, please generate a valid SQL query to answer this question: "{user_query}"
 """
-  
-    # setup request payload
   stuff_to_send = {
     "model": MODEL_NAME,
     "messages": [
@@ -68,13 +90,23 @@ Finally, please generate a valid SQL query to answer this question: "{user_query
       "message": "Failed to generate SQL query"
     }
 
-def get_pandas_query(user_query, schema_info):
-  # Always set is_export to False since we're removing export intent detection
+def get_pandas_query(user_query, schema_info, file_path=None):
   export_meta = {"is_export": False}
   
+  if file_path:
+    enhanced_schema = get_enhanced_schema_with_samples(file_path)
+    file_name = os.path.splitext(os.path.basename(file_path))[0]
+    relationship_info = get_file_connections(file_name)
+    examples = find_examples(user_query, file_name)
+    examples_text = format_examples_for_prompt(examples)
+  else:
+    enhanced_schema = schema_info
+    relationship_info = ""
+    examples_text = ""
+  
   cols = []  
-  if "Database Schema:" in schema_info:
-    lines = schema_info.split('\n')
+  if "Database Schema:" in enhanced_schema:
+    lines = enhanced_schema.split('\n')
     for l in lines:  
       if "Columns:" in l:
         cols_part = l.split("Columns:")[1].strip()
@@ -83,33 +115,38 @@ def get_pandas_query(user_query, schema_info):
   
   prompt = f"""You are a data query assistant that helps translate natural language questions into Pandas code.
 
-Given the following CSV file schema information:
+Given the following CSV file schema and sample data:
 
-{schema_info}
+{enhanced_schema}
+{relationship_info}
+{examples_text}
 
 When generating Pandas queries, please follow these guidelines:
 1. The CSV file is already loaded into a Pandas DataFrame called df — use it directly in your query.
-2. Use the exact string values shown in the examples — don’t shorten or tweak them.
-3. Use the exact column names from the schema — don’t rename, abbreviate, or modify them.
+2. Use the exact string values shown in the examples — don't shorten or tweak them.
+3. Use the exact column names from the schema — don't rename, abbreviate, or modify them.
 4. For filtering operations, use the appropriate Pandas methods (df.loc, df.query, etc.).
 5. For aggregation queries, use groupby(), agg(), etc. appropriately.
-6. For queries involving states or locations (like ‘GO’, ‘CA’, or ‘NY’), make comparisons case-insensitive when needed.
+6. For queries involving states or locations (like 'GO', 'CA', or 'NY'), make comparisons case-insensitive when needed.
 7. For popularity or frequency analysis, use value_counts() or groupby() with size() or count().
 8. Just return the columns that are actually relevant
 9. Limit the number of results when appropriate (e.g., using .head(N) for top N queries).
 10. Use proper Pandas syntax and best practices.
 11. Write your code as a single expression that returns either a DataFrame or a Series — no multi-step code.
-12. Avoid using any print() statements — just return the final DataFrame.
-13. Don’t include any imports, explanations, or extra code — just the data manipulation expression.
-14. When creating frequency counts, use this exact pattern for every data analysis task:
-    df['column_name'].value_counts().reset_index().rename(columns={{'index': 'column_display_name', 'column_name': 'count'}}).head(N)
-15. Never use duplicate column names in your result - ensure each column has a unique name
 
-Generate ONLY a single valid Python/Pandas expression to answer this question: \"{user_query}\"\n
-Return ONLY the final expression without any explanation, comments or markdown formatting.
+Specific handling for common queries:
+- When asked for "first N rows", always use "df.head(N)"
+- For "total" or "sum" questions, use df.groupby().sum() with appropriate column
+- For "count" or "how many" questions, use len(), count(), or value_counts()
+- For "average" or "mean" questions, use mean() function on appropriate column
+- For order information (like "when was order X delivered"), use appropriate filtering on order_id
+
+Return only the pandas code to execute — no explanations, comments, or markdown. Use a one-line expression that can be directly executed:
+
+Translate this question: "{user_query}"
 """
-  
-  params = {  
+
+  stuff_to_send = {
     "model": MODEL_NAME,
     "messages": [
       {"role": "user", "content": prompt}
@@ -118,54 +155,88 @@ Return ONLY the final expression without any explanation, comments or markdown f
   }
   
   try:
-    resp = requests.post(OLLAMA_API_URL, json=params)  
-    resp.raise_for_status() 
-    data = resp.json()
-    pandas_query = data.get('message', {}).get('content', '').strip()
+    res = requests.post(OLLAMA_API_URL, json=stuff_to_send)
+    res.raise_for_status()
+    data = res.json()
+    query = data.get('message', {}).get('content', '').strip()
+    query = clean_code_response(query)
     
     return {
       "success": True,
       "query_type": QUERY_TYPE_PANDAS,
-      "pandas_query": pandas_query,
+      "pandas_query": query,
       "export_meta": export_meta
     }
   except Exception as e:
+    logger.exception(f"Error in get_pandas_query: {str(e)}")
     return {
       "success": False,
       "error": str(e),
-      "message": "Failed to generate Pandas query",
-      "export_meta": {"is_export": False}
+      "message": "Failed to generate pandas query"
     }
+
+# Clean the LLM code response to remove markdown and other annotations
+def clean_code_response(response):
+  code = re.sub(r'```python\s*', '', response)
+  code = re.sub(r'```\s*', '', code)
+  
+  # Remove any comments
+  code = re.sub(r'#.*$', '', code, flags=re.MULTILINE)
+  
+  # Remove any explanations before or after the code and only get pandas code
+  if 'df' in code:
+    code_lines = code.split('\n')
+    pandas_lines = []
+    in_code_block = False
+    
+    for line in code_lines:
+      if 'df' in line:
+        in_code_block = True
+        pandas_lines.append(line)
+      elif in_code_block and line.strip() and not line.startswith('```'):
+        pandas_lines.append(line)
+    
+    code = '\n'.join(pandas_lines)
+  
+  return code.strip()
 
 # Generate a natural language explanation 
 def explain_query_results(results, user_query):
-  prompt = f"""Based on the following query results for the question "{user_query}":
-
-{results}
-
-Provide a clear, concise explanation of what these results mean in plain English. Focus only on the key insights, facts, and patterns within the data. Keep your response direct, factual, and avoid showing your thinking process or mentioning the SQL query. Make it sound like a direct answer to the user's question in a conversational tone, under 3-4 sentences if possible.
-"""
-  
-  req_data = {  
-    "model": MODEL_NAME,
-    "messages": [
-      {"role": "user", "content": prompt}
-    ],
-    "stream": False
-  }
-  
   try:
-    resp = requests.post(OLLAMA_API_URL, json=req_data)
-    resp.raise_for_status()
-    raw_response = resp.json()
-    explanation = raw_response.get('message', {}).get('content', '').strip()
-    return {
-      "success": True,
-      "explanation": explanation
+    if not results.get("success", False):
+      return f"Problem executing: {results.get('error', 'Unknown error')}"
+    
+    # Limit the amount of data we send to the model
+    data_preview = results.get("data", [])
+    if isinstance(data_preview, list) and len(data_preview) > 5:
+      data_preview = data_preview[:5]
+      trunc_note = "(showing first 5 rows)"
+    else:
+      trunc_note = ""
+    
+    prompt = f"""Given the following query and results, provide a clear and concise explanation of the data:
+
+Query: "{user_query}"
+
+Results: {json.dumps(data_preview, indent=2)} {trunc_note}
+
+Explain what these results mean in plain language. Be concise but informative. Focus on highlighting key insights or patterns:
+"""
+
+    stuff_to_send = {
+      "model": MODEL_NAME,
+      "messages": [
+        {"role": "user", "content": prompt}
+      ],
+      "stream": False
     }
+    
+    res = requests.post(OLLAMA_API_URL, json=stuff_to_send)
+    res.raise_for_status()
+    data = res.json()
+    explanation = data.get('message', {}).get('content', '').strip()
+    
+    return explanation
   except Exception as e:
-    logger.error(f"Error generating Explanation: {str(e)}")
-    return {
-      "success": False,
-      "explanation": f"Results for your query: '{user_query}'"
-    }
+    logger.exception(f"Error explaining results: {str(e)}")
+    return "I can't generate an explanation for these results."

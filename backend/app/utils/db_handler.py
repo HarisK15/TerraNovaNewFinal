@@ -37,6 +37,7 @@ def get_database_schema(file_path):
     schema = {}
     
     if file_extension == '.db':
+        import sqlite3
         conn = sqlite3.connect(abs_file_path)
         cursor = conn.cursor()
         cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
@@ -48,53 +49,105 @@ def get_database_schema(file_path):
             schema[table] = columns
             logger.info(f"Columns in {table}: {columns}")
         conn.close()
-
-    elif file_extension == '.csv':
-        df_sample = pd.read_csv(abs_file_path, nrows=5)
-        schema['data'] = df_sample.columns.tolist()
-        logger.info(f"CSV Columns: {schema['data']}")
-    return schema
-
-def format_schema_for_prompt(schema):
-    if isinstance(schema, dict) and "error" in schema:
-        return f"Error in schema: {schema['error']}"
         
-    formatted_schema = ["Database Schema:"]
-    for table, columns in schema.items():
-        formatted_schema.append(f"Table: {table}")
-        formatted_schema.append(f"Columns: {', '.join(columns)}")
+        # Format schema information
+        schema_text = "Database Schema:\n"
+        for table, cols in schema.items():
+            schema_text += f"Table: {table}\n"
+            schema_text += f"Columns: {', '.join(cols)}\n\n"
+        
+        return schema_text
+    else:  # CSV file
         try:
-            if table.endswith('.csv'):
-                file_path = os.path.join('uploads', table)
-            else:
-                file_path = os.path.join('uploads', f"{table}.db")
-                
-            if os.path.exists(file_path):
-                if file_path.endswith('.db'):
-                    conn = sqlite3.connect(file_path)
-                    cursor = conn.cursor()
-                    cursor.execute(f"SELECT * FROM {table} LIMIT 1")
-                    sample_row = cursor.fetchone()
-                    conn.close()
-                    
-                    if sample_row:
-                        example_values = dict(zip(columns, sample_row))
-                        formatted_schema.append("Example Values:")
-                        for col, value in example_values.items():
-                            formatted_schema.append(f"  - {col}: {value}")
-                else:  
-                    df = pd.read_csv(file_path, nrows=1)
-                    if not df.empty:
-                        example_values = df.iloc[0].to_dict()
-                        formatted_schema.append("Example Values:")
-                        for col, value in example_values.items():
-                            formatted_schema.append(f"  - {col}: {value}")
-        except Exception as e:
-            pass 
+            df = pd.read_csv(abs_file_path)
+            columns = df.columns.tolist()
+            logger.info(f"CSV columns: {columns}")
             
-        formatted_schema.append("")
+            # Basic schema info
+            schema_text = "Database Schema:\n"
+            schema_text += f"Table: data\n"
+            schema_text += f"Columns: {', '.join(columns)}\n"
+            schema_text += f"Row count: {len(df)}\n\n"
+            
+            return schema_text
+        except Exception as e:
+            logger.exception(f"Error reading CSV file: {str(e)}")
+            return f"Error: Could not read CSV file - {str(e)}"
+
+@handle_exceptions(return_error_dict=False)
+def get_enhanced_schema_with_samples(file_path, sample_rows=5):
+    """Get schema and sample data for RAG"""
+    abs_file_path = os.path.abspath(file_path)
+    file_extension = os.path.splitext(abs_file_path)[1].lower()
     
-    return "\n".join(formatted_schema)
+    # Get basic schema
+    schema_text = get_database_schema(file_path)
+    
+    # Add sample data
+    if file_extension == '.db':
+        import sqlite3
+        conn = sqlite3.connect(abs_file_path)
+        cursor = conn.cursor()
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
+        tables = [row[0] for row in cursor.fetchall()]
+        
+        sample_text = "Sample Data:\n"
+        for table in tables:
+            cursor.execute(f"SELECT * FROM {table} LIMIT {sample_rows};")
+            rows = cursor.fetchall()
+            
+            # Get column names
+            cursor.execute(f"PRAGMA table_info({table});")
+            columns = [row[1] for row in cursor.fetchall()]
+            
+            sample_text += f"Table: {table}\n"
+            # Create a simple tabular representation
+            sample_text += " | ".join(columns) + "\n"
+            sample_text += "-" * (sum(len(col) for col in columns) + 3 * (len(columns) - 1)) + "\n"
+            
+            for row in rows:
+                sample_text += " | ".join(str(val) for val in row) + "\n"
+            
+            sample_text += "\n"
+        
+        conn.close()
+        return schema_text + "\n" + sample_text
+    else:  # CSV file
+        try:
+            df = pd.read_csv(abs_file_path)
+            
+            # Add column statistics to help LLM understand data distribution
+            stats_text = "Column Statistics:\n"
+            for col in df.columns:
+                if pd.api.types.is_numeric_dtype(df[col]):
+                    stats_text += f"{col}: min={df[col].min()}, max={df[col].max()}, avg={df[col].mean():.2f}\n"
+                else:
+                    # For string columns, show unique value count
+                    unique_vals = df[col].nunique()
+                    stats_text += f"{col}: {unique_vals} unique values\n"
+                    # If few unique values, show them
+                    if unique_vals <= 10:
+                        stats_text += f"  Values: {', '.join([str(x) for x in df[col].unique()[:10]])}\n"
+            
+            # Sample data
+            sample_text = "\nSample Data (first 5 rows):\n"
+            sample_df = df.head(sample_rows)
+            
+            # Convert to a simple string table
+            headers = sample_df.columns.tolist()
+            header_row = " | ".join(headers)
+            separator = "-" * len(header_row)
+            
+            sample_text += header_row + "\n"
+            sample_text += separator + "\n"
+            
+            for _, row in sample_df.iterrows():
+                sample_text += " | ".join([str(row[col])[:20] for col in headers]) + "\n"
+            
+            return schema_text + "\n" + stats_text + "\n" + sample_text
+        except Exception as e:
+            logger.exception(f"Error getting enhanced schema: {str(e)}")
+            return schema_text + f"\nError getting sample data: {str(e)}"
 
 @handle_exceptions()
 def execute_pandas_query(file_path, pandas_code):

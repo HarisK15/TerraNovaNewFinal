@@ -103,13 +103,10 @@ const theme = createTheme({
           padding: '10px 18px',
           fontWeight: 500,
           boxShadow: 'none',
-          '&:hover': {
-            boxShadow: '0px 4px 8px -2px rgba(16, 24, 40, 0.1), 0px 2px 4px -2px rgba(16, 24, 40, 0.06)',
-            backgroundColor: 'primary.light'
-          }
+          transition: 'none'
         },
         containedPrimary: {
-          background: 'linear-gradient(90deg, #7F56D9 0%, #9E77ED 100%)',
+          backgroundColor: '#7F56D9',
           color: 'white'
         }
       }
@@ -143,7 +140,7 @@ function MyApp() {
             display: 'flex',
             flexDirection: 'column',
             minHeight: '100vh',
-            background: 'linear-gradient(180deg, rgba(127, 86, 217, 0.02) 0%, rgba(255, 255, 255, 0) 100%)'
+            background: '#FFFFFF'
           }}
         >
           {/* AppBar */}

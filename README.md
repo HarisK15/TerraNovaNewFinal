@@ -86,7 +86,7 @@ cd TerraNovaNewFinal
    MODEL_NAME=llama3
    
    Note: You will need to have Ollama running locally with the model mentioned above.
-   If you don't have Ollama, you can download it from [https://ollama.ai/](https://ollama.ai/). Download llama3 8b parameter version, though if your machine supports it, you can use one with more parameters.
+   If you don't have Ollama, you can download it from [https://ollama.ai/](https://ollama.ai/). Download any llama3 version with 3b parameter version, though if your machine supports it, you can use one with more parameters for better chatbot accuracy.
 
 
 
