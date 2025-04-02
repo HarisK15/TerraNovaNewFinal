@@ -41,8 +41,8 @@ The project consists of two main components:
 
 1. *Clone the Repository*
 
-git clone https://github.com/HarisK15/TerraNovaNewFinal.git
-cd TerraNovaNewFinal
+git clone https://github.com/Terranova-Projects/individualprojectcode-HarisK15.git
+cd individualprojectcode-HarisK15
 
 
 

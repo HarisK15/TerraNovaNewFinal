@@ -211,7 +211,6 @@ df_valid = df.dropna(subset=['purchase_date', 'delivery_date'])
 vector_store = None
 
 def find_examples(query, file_type=None, max_count=3):
-    """Find relevant examples using vector similarity search"""
     global vector_store
     
     if vector_store is None:
@@ -225,7 +224,6 @@ def find_examples(query, file_type=None, max_count=3):
             examples.append(result["content"])
             if len(examples) >= max_count:
                 break
-                
     return examples
 
 # Fallback if vector search fails
@@ -246,18 +244,15 @@ def _find_examples_keyword_fallback(query, file_type=None, max_count=3):
             score = len(common) / len(query_words)
             matches.append((score, ex))
     
-    # Sort by score and take top N
     matches.sort(reverse=True)
     return [ex for _, ex in matches[:max_count]]
 
 def initialize_vector_store():
-    """Initialize the vector store with examples"""
     global vector_store
     
     vector_store = VectorStore()
     vector_store_dir = os.path.join(os.getcwd(), "vector_store")
-    
-    # Try to load existing store
+
     if os.path.exists(vector_store_dir):
         try:
             logger.info("Loading existing vector store...")
@@ -265,11 +260,7 @@ def initialize_vector_store():
             return
         except Exception as e:
             logger.error(f"Error loading vector store: {e}")
-    
-    # If loading fails or doesn't exist, create new store
     logger.info("Creating new vector store...")
-    
-    # Prepare metadata
     metadata_list = []
     for example in query_examples:
         metadata_list.append({
@@ -289,11 +280,7 @@ def initialize_vector_store():
             "type": "pattern",
             "file_type": "any"
         })
-    
-    # Add all documents to vector store
     vector_store.add_documents(query_examples, metadata_list)
-    
-    # Save to disk
     vector_store.save(vector_store_dir)
 
 # Todo: draw this and include in evaluation/code structure part of paper
