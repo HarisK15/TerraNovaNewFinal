@@ -4,3 +4,6 @@ pandas
 numpy
 requests>=2.26.0
 python-dotenv>=0.19.0
+sentence-transformers>=2.2.2
+faiss-cpu>=1.7.4
+scikit-learn>=1.0.2

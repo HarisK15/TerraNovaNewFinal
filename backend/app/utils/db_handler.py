@@ -198,48 +198,112 @@ def execute_pandas_query(file_path, pandas_code):
 
     # Create locals dictionary with the DataFrame
     locals_dict = {'df': df, 'result': None}
-    exec(f"result = {pandas_code}", {'pd': pd, 'np': np, '__builtins__': {}}, locals_dict)
     
-    if isinstance(locals_dict['result'], pd.DataFrame) and len(locals_dict['result'].columns) == 2 and locals_dict['result'].columns.duplicated().any():
-        locals_dict['result'].columns = ["value", "count"]
-    if isinstance(locals_dict['result'], pd.DataFrame):
-        if any(locals_dict['result'].columns.duplicated()):
-            # Rename duplicate columns by adding a number suffix
-            cols = list(locals_dict['result'].columns)
-            for i, col in enumerate(cols):
-                count = cols[:i].count(col)
-                if count > 0:
-                    cols[i] = f"{col}_{count}"
-            locals_dict['result'].columns = cols
+    try:
+        exec(f"result = {pandas_code}", {'pd': pd, 'np': np, '__builtins__': {}}, locals_dict)
         
-        results_dict = locals_dict['result'].to_dict(orient='records')
-        return {
-            "success": True,
-            "results": results_dict,
-            "columns": locals_dict['result'].columns.tolist()
-        }
-    elif isinstance(locals_dict['result'], pd.Series):
-        # Convert Series to DataFrame
-        result_df = locals_dict['result'].reset_index()
-        
-        # If index has no name, give it a default
-        if result_df.columns[0] == 'index':
-            result_df.columns = ['key', 'value']
-        
-        results_dict = result_df.to_dict(orient='records')
-        
-        return {
-            "success": True,
-            "results": results_dict,
-            "columns": result_df.columns.tolist()
-        }
-    else:
-        # Handle scalar or other types
-        return {
-            "success": True,
-            "results": [{"result": locals_dict['result']}],
-            "columns": ["result"]
-        }
+        # Handle timedelta objects
+        if pd.api.types.is_timedelta64_dtype(locals_dict['result']):
+            locals_dict['result'] = locals_dict['result'].total_seconds() / (24*60*60)  
+        elif isinstance(locals_dict['result'], pd.Timedelta):
+            locals_dict['result'] = locals_dict['result'].total_seconds() / (24*60*60) 
+            
+        # regular int or float
+        if isinstance(locals_dict['result'], (int, float)):
+            return {
+                "success": True,
+                "results": [{"result": locals_dict['result']}],
+                "columns": ["result"]
+            }
+    
+        if isinstance(locals_dict['result'], pd.DataFrame) and len(locals_dict['result'].columns) == 2 and locals_dict['result'].columns.duplicated().any():
+            locals_dict['result'].columns = ["value", "count"]
+            
+        if isinstance(locals_dict['result'], pd.DataFrame):
+            # Convert timedelta columns to days
+            for col in locals_dict['result'].columns:
+                if pd.api.types.is_timedelta64_dtype(locals_dict['result'][col]):
+                    locals_dict['result'][col] = locals_dict['result'][col].dt.total_seconds() / (24*60*60)
+                    
+            if any(locals_dict['result'].columns.duplicated()):
+                cols = list(locals_dict['result'].columns)
+                for i, col in enumerate(cols):
+                    count = cols[:i].count(col)
+                    if count > 0:
+                        cols[i] = f"{col}_{count}"
+                locals_dict['result'].columns = cols
+                
+            results_dict = locals_dict['result'].to_dict(orient='records')
+            return {
+                "success": True,
+                "results": results_dict,
+                "columns": locals_dict['result'].columns.tolist()
+            }
+        elif isinstance(locals_dict['result'], pd.Series):
+            # Convert Series to DataFrame
+            result_df = locals_dict['result'].reset_index()
+            
+            # If timedelta Series, convert to days
+            if pd.api.types.is_timedelta64_dtype(result_df.iloc[:, 1]):
+                result_df.iloc[:, 1] = result_df.iloc[:, 1].dt.total_seconds() / (24*60*60)
+            
+            # If index has no name, give it a default
+            if result_df.columns[0] == 'index':
+                result_df.columns = ['key', 'value']
+            
+            results_dict = result_df.to_dict(orient='records')
+            
+            return {
+                "success": True,
+                "results": results_dict,
+                "columns": result_df.columns.tolist()
+            }
+        else:
+            if isinstance(locals_dict['result'], list):
+                if len(locals_dict['result']) > 0:
+                    if isinstance(locals_dict['result'][0], (str, int, float, bool)):
+                        column_name = "product_id" if "product_id" in pandas_code else (
+                            "order_id" if "order_id" in pandas_code else "value")
+                        result_df = pd.DataFrame({column_name: locals_dict['result']})
+                        return {
+                            "success": True,
+                            "results": result_df.to_dict(orient='records'),
+                            "columns": result_df.columns.tolist()
+                        }
+                    else:
+                        try:
+                            result_df = pd.DataFrame(locals_dict['result'])
+                            return {
+                                "success": True,
+                                "results": result_df.to_dict(orient='records'),
+                                "columns": result_df.columns.tolist()
+                            }
+                        except Exception as e:
+                            logger.warning(f"Failed to convert complex list to DataFrame: {e}")
+            
+            if isinstance(locals_dict['result'], str) and (',' in locals_dict['result'] or '\n' in locals_dict['result']):
+                try:
+                    values = [v.strip() for v in re.split(r'[,\n]', locals_dict['result']) if v.strip()]
+                    if len(values) > 0:
+                        column_name = "product_id" if "product_id" in pandas_code else (
+                            "order_id" if "order_id" in pandas_code else "value")
+                        result_df = pd.DataFrame({column_name: values})
+                        return {
+                            "success": True, 
+                            "results": result_df.to_dict(orient='records'),
+                            "columns": result_df.columns.tolist()
+                        }
+                except Exception as e:
+                    logger.warning(f"Failed to parse comma-separated string: {e}")
+            
+            return {
+                "success": True,
+                "results": [{"result": str(locals_dict['result'])}],
+                "columns": ["result"]
+            }
+    except Exception as e:
+        logger.info(f"Error in execute_pandas_query: {str(e)}")
+        return {"success": False, "error": str(e)}
 
 @handle_exceptions()
 def execute_query(file_path, sql_query):
