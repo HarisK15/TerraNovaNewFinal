@@ -5,3 +5,5 @@ backend/node_modules/
 **/.cache/
 **/*.pack
 **/uploads/
+__pycache__/
+*.pyc
