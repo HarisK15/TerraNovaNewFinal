@@ -134,6 +134,19 @@ When generating Pandas queries, please follow these guidelines:
 10. Use proper Pandas syntax and best practices.
 11. Write your code as a single expression that returns either a DataFrame or a Series — no multi-step code.
 
+For Date//Time handling:
+- always use pd.to_datetime() with errors='coerce' when working with date/time columns
+- For time differences, never subtract strings directly:
+  WRONG: df['order_delivered_timestamp'] - df['order_purchase_timestamp']
+  CORRECT: pd.to_datetime(df['order_delivered_timestamp'], errors='coerce') - pd.to_datetime(df['order_purchase_timestamp'], errors='coerce')
+- Access the days component with .dt.days after calculating a timedelta
+- If working with a specific order ID, first confirm it exists before calculating:
+  ```
+  order = df[df['order_id'] == 'specific_id']
+  if len(order) > 0:
+      # then perform date calculations
+  ```
+
 Specific handling for common queries:
 - When asked for "first N rows", always use "df.head(N)"
 - For "total" or "sum" questions, use df.groupby().sum() with appropriate column

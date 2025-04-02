@@ -1,9 +1,14 @@
-
 # RAG stuff for  CSV datasets
 # Contains examples and metadata to help LLM understand dataset
 # Tod: Add more examples, patterns if time
+# Todo: Replace with vector DB if time    
 
 import random 
+import os
+import logging
+from app.utils.vector_store import VectorStore
+
+logger = logging.getLogger(__name__)
 
 # file info for given training csv files
 csv_files = {
@@ -170,14 +175,61 @@ query_examples = [
         result[result['order_count'] > 5]""",
         "file_type": "multiple",
         "notes": "Demonstrates multi-file query with filtering and aggregation"
-    }
+    },
+    {
+        "query": "What's the time difference in days between order purchase and delivery for order ABC123?",
+        "code": """# First check if the order exists and get timestamps
+order_data = df[df['order_id'] == 'ABC123']
+if len(order_data) > 0:
+    # Convert to datetime and calculate difference in days
+    purchase_date = pd.to_datetime(order_data['order_purchase_timestamp'].iloc[0], errors='coerce')
+    delivery_date = pd.to_datetime(order_data['order_delivered_timestamp'].iloc[0], errors='coerce')
+    if pd.notna(purchase_date) and pd.notna(delivery_date):
+        (delivery_date - purchase_date).days
+    else:
+        "Purchase or delivery date is missing"
+else:
+    "Order not found" """,
+        "file_type": "csv",
+        "notes": "Example of safe date difference calculation for a specific order"
+    },
+    {
+        "query": "What's the average time in days between order purchase and delivery?",
+        "code": """# Calculate time difference between purchase and delivery for all orders
+# First convert timestamps to datetime
+df['purchase_date'] = pd.to_datetime(df['order_purchase_timestamp'], errors='coerce')
+df['delivery_date'] = pd.to_datetime(df['order_delivered_timestamp'], errors='coerce')
+# Calculate difference where both dates are available
+df_valid = df.dropna(subset=['purchase_date', 'delivery_date'])
+(df_valid['delivery_date'] - df_valid['purchase_date']).dt.days.mean()""",
+        "file_type": "csv",
+        "notes": "Example of safe date difference calculation across all orders"
+    },
 ]
 
+# Global vector store
+vector_store = None
 
-
-    
-# Todo: Replace with vector DB if time    
 def find_examples(query, file_type=None, max_count=3):
+    """Find relevant examples using vector similarity search"""
+    global vector_store
+    
+    if vector_store is None:
+        initialize_vector_store()
+    results = vector_store.similarity_search(query, k=max_count*2)  
+    examples = []
+    for result in results:
+        if result["metadata"]["type"] == "example":
+            if file_type and result["metadata"].get("file_type") != "any" and result["metadata"].get("file_type") != file_type:
+                continue
+            examples.append(result["content"])
+            if len(examples) >= max_count:
+                break
+                
+    return examples
+
+# Fallback if vector search fails
+def _find_examples_keyword_fallback(query, file_type=None, max_count=3):
     if file_type:
         filtered = [ex for ex in query_examples 
                     if ex["file_type"] == file_type or ex["file_type"] == "any"]
@@ -190,39 +242,59 @@ def find_examples(query, file_type=None, max_count=3):
     for ex in filtered:
         ex_words = set(ex["query"].lower().split())
         common = query_words.intersection(ex_words)
-        if common:
-            matches.append({
-                "example": ex,
-                "score": len(common) / len(query_words)  
-            })
+        if len(common) > 0:
+            score = len(common) / len(query_words)
+            matches.append((score, ex))
     
-    return [item["example"] for item in 
-            sorted(matches, key=lambda x: x["score"], reverse=True)[:max_count]]
+    # Sort by score and take top N
+    matches.sort(reverse=True)
+    return [ex for _, ex in matches[:max_count]]
 
-def guess_relevant_files(query):
-    relevance = {}
-    for file_name, metadata in csv_files.items():
-        relevance[file_name] = 0
-        
-        for col in metadata["columns"]:
-            if col.lower() in query.lower():
-                relevance[file_name] += 2
-        
-        for q in metadata["example_qs"]:
-            q_words = set(q.lower().split())
-            query_words = set(query.lower().split())
-            matches = q_words.intersection(query_words)
-            relevance[file_name] += len(matches) * 0.5
+def initialize_vector_store():
+    """Initialize the vector store with examples"""
+    global vector_store
     
-    relevant = [file for file, score in 
-                     sorted(relevance.items(), key=lambda x: x[1], reverse=True) 
-                     if score > 0]
+    vector_store = VectorStore()
+    vector_store_dir = os.path.join(os.getcwd(), "vector_store")
     
-    if not relevant:
-        return list(csv_files.keys())
+    # Try to load existing store
+    if os.path.exists(vector_store_dir):
+        try:
+            logger.info("Loading existing vector store...")
+            vector_store.load(vector_store_dir)
+            return
+        except Exception as e:
+            logger.error(f"Error loading vector store: {e}")
     
-    return relevant
-
+    # If loading fails or doesn't exist, create new store
+    logger.info("Creating new vector store...")
+    
+    # Prepare metadata
+    metadata_list = []
+    for example in query_examples:
+        metadata_list.append({
+            "type": "example",
+            "file_type": example.get("file_type", "any")
+        })
+    
+    # Add pattern metadata
+    for pattern in query_patterns:
+        pattern_entry = {
+            "query": f"How to {pattern['desc']}",
+            "code": pattern.get("pandas", ""),
+            "file_type": "any"
+        }
+        query_examples.append(pattern_entry)
+        metadata_list.append({
+            "type": "pattern",
+            "file_type": "any"
+        })
+    
+    # Add all documents to vector store
+    vector_store.add_documents(query_examples, metadata_list)
+    
+    # Save to disk
+    vector_store.save(vector_store_dir)
 
 # Todo: draw this and include in evaluation/code structure part of paper
 def get_file_connections(file_name):
@@ -246,3 +318,23 @@ def format_examples_for_prompt(examples):
         text += f"{i}. Question: \"{ex['query']}\"\n"
         text += f"   Code: {ex['code']}\n\n"
     return text
+
+def guess_relevant_files(query):
+    relevance = {}
+    for file_name, metadata in csv_files.items():
+        relevance[file_name] = 0
+        for col in metadata["columns"]:
+            if col.lower() in query.lower():
+                relevance[file_name] += 2
+        for q in metadata["example_qs"]:
+            q_words = set(q.lower().split())
+            query_words = set(query.lower().split())
+            matches = q_words.intersection(query_words)
+            relevance[file_name] += len(matches) * 0.5
+    
+    relevant = [file for file, score in 
+                     sorted(relevance.items(), key=lambda x: x[1], reverse=True) 
+                     if score > 0]
+    if not relevant:
+        return list(csv_files.keys())
+    return relevant

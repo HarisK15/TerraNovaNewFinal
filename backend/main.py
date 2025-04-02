@@ -4,6 +4,7 @@ from flask_cors import CORS
 from dotenv import load_dotenv
 from app.routes.file_routes import file_routes
 from app.routes.query_routes import query_bp
+from app.utils.rag_examples import initialize_vector_store
 import logging
 
 # Author: Haris Kamran, K21084769 — March 2025
@@ -33,6 +34,9 @@ app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024
 CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
 app.register_blueprint(file_routes)
 app.register_blueprint(query_bp)
+
+
+initialize_vector_store()
 
 @app.route('/health', methods=['GET'])
 def health_check():
